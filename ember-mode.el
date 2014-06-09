@@ -150,9 +150,10 @@ Sources are specified in ember by a few orthogonal factors:
             respectively."
            `(progn
               ,@(loop for matcher in matchers collect
-                      `(push (list ,(first matcher) ,(second matcher)
-                                   (lambda (class type target) ,@(cddr matcher)))
-                             matchers)))))
+                      `(setf matchers
+                             (append matchers 
+                                     (list (list ,(first matcher) ,(second matcher)
+                                                 (lambda (class type target) ,@(cddr matcher))))))))))
       (define-matchers
         ;; BEGIN contains the definition for each matcher
         ;; the first two columns are a regexp, the rest is executed as code
@@ -218,8 +219,13 @@ file."
                           (string= extension "js"))
                       "source" "template")))
         ;; todo: discover index
-        ;; todo: discover component template
-        (list maybe-base-class (pluralize-noun maybe-base-type) kind)))))
+        (save-excursion
+          (cond ((and (string= maybe-base-type "templates")
+                      (string-match-p "^components/\\(.*\\)$" maybe-base-class))
+                 (list (substring maybe-base-class (length "components/"))
+                       "component"
+                       "template"))
+                (t (list maybe-base-class (singularize-noun maybe-base-type) kind))))))))
           
 (cl-defun ember-open-file-by-type (type &optional (assume-js t))
   "Opens an ember file for a given kind"
