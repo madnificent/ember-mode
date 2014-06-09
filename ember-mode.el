@@ -5,14 +5,14 @@
 ;; bindings have been created to quickly jump to the relevant sources
 ;; given that you're visiting a recognised file (*) in the ember project.
 ;;
-;; In the current state, you can quickly jump to:
-;; - the model
-;; - the controller
-;; - the route
-;; - the router
-;; - the view
-;; - the component
-;; - the template
+;; In the current state, you can quickly jump to the:
+;; - model
+;; - controller
+;; - route
+;; - router
+;; - view
+;; - component
+;; - template
 ;;
 ;; ember-mode is currently geared towards ember-cli, however the
 ;; folder structure is similar in similar build systems for ember so
@@ -260,44 +260,51 @@ file."
 (defun open-ember-component ()
   (interactive)
   (ember-open-file-by-type "component"))
-(global-set-key (kbd "C-c c f p") #'open-ember-component)
+
 (defun open-ember-router ()
   (interactive)
   (ember-open-file-by-type "router"))
-(global-set-key (kbd "C-c c f o") #'open-ember-router)
+
 (defun open-ember-controller ()
   (interactive)
   (ember-open-file-by-type "controller"))
-(global-set-key (kbd "C-c c f c") #'open-ember-controller)
+
 (defun open-ember-model ()
   (interactive)
   (ember-open-file-by-type "model"))
-(global-set-key (kbd "C-c c f m") #'open-ember-model)
+
 (defun open-ember-route ()
   (interactive)
   (ember-open-file-by-type "route"))
-(global-set-key (kbd "C-c c f r") #'open-ember-route)
+
 (defun open-ember-template ()
   (interactive)
   (ember-open-file-by-kind "template"))
-(global-set-key (kbd "C-c c f t") #'open-ember-template)
+
 (defun open-ember-javascript ()
   (interactive)
   (ember-open-file-by-kind "source"))
-(global-set-key (kbd "C-c c f s") #'open-ember-javascript)
+
 (defun open-ember-view ()
   (interactive)
   (ember-open-file-by-type "view"))
-(global-set-key (kbd "C-c c f v") #'open-ember-view)
 
-(provide 'emberjs)
 
-;;; personal bindings
-(global-set-key (kbd "© c f p") #'open-ember-component)
-(global-set-key (kbd "© c f o") #'open-ember-router)
-(global-set-key (kbd "© c f c") #'open-ember-controller)
-(global-set-key (kbd "© c f m") #'open-ember-model)
-(global-set-key (kbd "© c f r") #'open-ember-route)
-(global-set-key (kbd "© c f t") #'open-ember-template)
-(global-set-key (kbd "© c f s") #'open-ember-javascript)
-(global-set-key (kbd "© c f v") #'open-ember-view)
+(defvar ember-mode-keymap (make-sparse-keymap)
+  "Keymap for ember-mode.")
+
+(define-key ember-mode-keymap (kbd "C-c c f p") #'open-ember-component)
+(define-key ember-mode-keymap (kbd "C-c c f o") #'open-ember-router)
+(define-key ember-mode-keymap (kbd "C-c c f c") #'open-ember-controller)
+(define-key ember-mode-keymap (kbd "C-c c f m") #'open-ember-model)
+(define-key ember-mode-keymap (kbd "C-c c f r") #'open-ember-route)
+(define-key ember-mode-keymap (kbd "C-c c f t") #'open-ember-template)
+(define-key ember-mode-keymap (kbd "C-c c f s") #'open-ember-javascript)
+(define-key ember-mode-keymap (kbd "C-c c f v") #'open-ember-view)
+
+(define-minor-mode ember-mode
+  "Mode for navigating around ember applications"
+  nil " [EM]" ember-mode-keymap
+  :global t)
+
+(provide 'ember-mode)
