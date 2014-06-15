@@ -47,20 +47,28 @@
 
 (require 'cl)
 
+
+(defgroup ember nil
+  "Ember-mode customizations."
+  :prefix "ember-")
+
 ;;;;;;;;;;;;
 ;;;; plurals
 ;;
 ;; This should really be replaced by a Snowball or Porter2 stemmer.
 ;; It seems to be good enough for a proof of concept of ember-mode.
 
-(defvar *pluralization-irregular-nouns* '(("child" . "children") ("woman" . "women") ("man" . "men") ("mouse" . "mice") ("goose" . "geese"))
-  "alist containing the singular first and the plural next of some words.")
+(defcustom ember-pluralization-irregular-nouns
+  '(("child" . "children") ("woman" . "women") ("man" . "men") ("mouse" . "mice") ("goose" . "geese"))
+  "Contain irregular pluralizations which ember-mode considers."
+  :type '(alist :key-type string :value-type string)
+  :group 'ember)
 
-(defun pluralize-noun (noun)
+(defun ember--pluralize-noun (noun)
   "Pluralizes NOUN."
   (save-match-data
-    (cond ((find noun *pluralization-irregular-nouns* :key #'car :test #'string=)
-           (cdr (find noun *pluralization-irregular-nouns* :key #'car :test #'string=)))
+    (cond ((find noun ember-pluralization-irregular-nouns :key #'car :test #'string=)
+           (cdr (find noun ember-pluralization-irregular-nouns :key #'car :test #'string=)))
           ((string-match-p "[yo]$" noun)
            (message "Don't know how to translate %s" noun)
            noun)
@@ -71,11 +79,11 @@
            (concat (match-string 1 noun) "ves"))
           (t (concat noun "s")))))
 
-(defun singularize-noun (noun)
+(defun ember--singularize-noun (noun)
   "Singularizes NOUN."
   (save-match-data
-    (cond ((find noun *pluralization-irregular-nouns* :key #'cdr :test #'string=)
-           (car (find noun *pluralization-irregular-nouns* :key #'cdr :test #'string=)))
+    (cond ((find noun ember-pluralization-irregular-nouns :key #'cdr :test #'string=)
+           (car (find noun ember-pluralization-irregular-nouns :key #'cdr :test #'string=)))
           ((string-match "^\\(.*ch\\)es$" noun)
            (match-string 1 noun))
           ((string-match "^\\(.*[xs]\\)es$" noun)
@@ -89,7 +97,7 @@
 
 ;;;;;;;;;;;;
 ;;;; emberjs
-(defun relative-ember-source-path (base-class base-type target-kind)
+(defun ember--relative-ember-source-path (base-class base-type target-kind)
   "Supplies a list of plausible paths to an ember source file given
 its core components.  The paths are returned as a list of strings,
 starting from the app's root.
@@ -175,18 +183,18 @@ Sources are specified in ember by a few orthogonal factors:
                   (string-match target-kind-regexp target-kind))
           return (funcall functor base-class base-type target-kind))))
 
-(defun ember-current-project-root ()
+(defun ember--current-project-root ()
   "Returns the root folder of the current ember project."
   ;; for the current implementation this basically walks up the tree until
   ;; it sees an app folder and assumes the folder containing the app folder
   ;; is the root of the ember project.
   (locate-dominating-file (or load-file-name buffer-file-name) "app"))
 
-(defun join-strings (list join-string)
+(defun ember--join-strings (list join-string)
   "Joins the list of strings by the supplied separator"
   (apply #'concat (rest (loop for str in list append (list join-string str)))))
 
-(defun relative-directory-components (file)
+(defun ember--relative-directory-components (file)
   "Returns the components of which the relative directory of file consists."
   ;; I assume split-string will work on non-unix systems because the function
   ;; `convert-standard-filename` exists and I like to think in a world with
@@ -194,11 +202,11 @@ Sources are specified in ember by a few orthogonal factors:
   ;; note: by using `directory-file-name` we strip the last empty component
   (split-string (directory-file-name (file-name-directory file)) "/"))
 
-(defun ember-current-file-components ()
+(defun ember--current-file-components ()
   "returns a list containing the components upon which make up this ember
 source file.
 
-the components are defined in `relative-ember-source-path`.  this function
+the components are defined in `ember--relative-ember-source-path`.  this function
 returns the base-class, the base-type and the target-kind of the current
 file."
   ;; in this, the base type can normally be derived from the top level
@@ -207,11 +215,11 @@ file."
   ;; in between can be considered to be the class of the file (in most
   ;; cases).
   (let* ((relative-path (file-relative-name (or load-file-name buffer-file-name)
-                                            (ember-current-project-root)))
-         (rep-dir-components (relative-directory-components relative-path)))
+                                            (ember--current-project-root)))
+         (rep-dir-components (ember--relative-directory-components relative-path)))
     (let ((extension (file-name-extension relative-path))
           (maybe-base-type (second rep-dir-components))
-          (maybe-base-class (join-strings (append (cddr rep-dir-components)
+          (maybe-base-class (ember--join-strings (append (cddr rep-dir-components)
                                                   (list (file-name-base relative-path)))
                                           "/")))
       ;; (list maybe-base-class maybe-base-type extension)
@@ -225,31 +233,31 @@ file."
                  (list (substring maybe-base-class (length "components/"))
                        "component"
                        "template"))
-                (t (list maybe-base-class (singularize-noun maybe-base-type) kind))))))))
+                (t (list maybe-base-class (ember--singularize-noun maybe-base-type) kind))))))))
           
 (cl-defun ember-open-file-by-type (type &optional (assume-js t))
   "Opens an ember file for a given kind"
   (destructuring-bind (base-class base-type target-kind)
-      (ember-current-file-components)
+      (ember--current-file-components)
     (ember-generic-open-file base-class type (if assume-js "source" target-kind))))
 
 (defun ember-open-file-by-kind (kind)
   "Opens an ember file for a given kind"
   (destructuring-bind (base-class base-type target-kind)
-      (ember-current-file-components)
+      (ember--current-file-components)
     (ember-generic-open-file base-class base-type kind)))
 
 (defun ember-generic-open-file (base-class base-type target-kind)
   "Tries to open the ember file specified by BASE-CLASS, BASE-TYPE and TARGET-KIND.
    If no such file was found, it tries to find related files or requests the user
    if the file should be created."
-  (let ((ember-root (ember-current-project-root))
+  (let ((ember-root (ember--current-project-root))
         (file-list
          ;; pick the files and their alternatives, so we have a good list
          ;; to search for an existing file.
-         (append (relative-ember-source-path base-class base-type target-kind)
-                 (relative-ember-source-path (pluralize-noun base-class) base-type target-kind)
-                 (relative-ember-source-path (singularize-noun base-class) base-type target-kind))))
+         (append (ember--relative-ember-source-path base-class base-type target-kind)
+                 (ember--relative-ember-source-path (ember--pluralize-noun base-class) base-type target-kind)
+                 (ember--relative-ember-source-path (ember--singularize-noun base-class) base-type target-kind))))
     (block found-file
       (loop for relative-file in file-list
             for absolute-file = (concat ember-root relative-file)
@@ -263,35 +271,35 @@ file."
           (find-file abs-file)
           (return-from found-file abs-file))))))
 
-(defun open-ember-component ()
+(defun ember-open-component ()
   (interactive)
   (ember-open-file-by-type "component"))
 
-(defun open-ember-router ()
+(defun ember-open-router ()
   (interactive)
   (ember-open-file-by-type "router"))
 
-(defun open-ember-controller ()
+(defun ember-open-controller ()
   (interactive)
   (ember-open-file-by-type "controller"))
 
-(defun open-ember-model ()
+(defun ember-open-model ()
   (interactive)
   (ember-open-file-by-type "model"))
 
-(defun open-ember-route ()
+(defun ember-open-route ()
   (interactive)
   (ember-open-file-by-type "route"))
 
-(defun open-ember-template ()
+(defun ember-open-template ()
   (interactive)
   (ember-open-file-by-kind "template"))
 
-(defun open-ember-javascript ()
+(defun ember-open-javascript ()
   (interactive)
   (ember-open-file-by-kind "source"))
 
-(defun open-ember-view ()
+(defun ember-open-view ()
   (interactive)
   (ember-open-file-by-type "view"))
 
@@ -299,14 +307,14 @@ file."
 (defvar ember-mode-keymap (make-sparse-keymap)
   "Keymap for ember-mode.")
 
-(define-key ember-mode-keymap (kbd "C-c c f p") #'open-ember-component)
-(define-key ember-mode-keymap (kbd "C-c c f o") #'open-ember-router)
-(define-key ember-mode-keymap (kbd "C-c c f c") #'open-ember-controller)
-(define-key ember-mode-keymap (kbd "C-c c f m") #'open-ember-model)
-(define-key ember-mode-keymap (kbd "C-c c f r") #'open-ember-route)
-(define-key ember-mode-keymap (kbd "C-c c f t") #'open-ember-template)
-(define-key ember-mode-keymap (kbd "C-c c f s") #'open-ember-javascript)
-(define-key ember-mode-keymap (kbd "C-c c f v") #'open-ember-view)
+(define-key ember-mode-keymap (kbd "C-c c f p") #'ember-open-component)
+(define-key ember-mode-keymap (kbd "C-c c f o") #'ember-open-router)
+(define-key ember-mode-keymap (kbd "C-c c f c") #'ember-open-controller)
+(define-key ember-mode-keymap (kbd "C-c c f m") #'ember-open-model)
+(define-key ember-mode-keymap (kbd "C-c c f r") #'ember-open-route)
+(define-key ember-mode-keymap (kbd "C-c c f t") #'ember-open-template)
+(define-key ember-mode-keymap (kbd "C-c c f s") #'ember-open-javascript)
+(define-key ember-mode-keymap (kbd "C-c c f v") #'ember-open-view)
 
 (define-minor-mode ember-mode
   "Mode for navigating around ember applications"
