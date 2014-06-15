@@ -97,6 +97,22 @@
 
 ;;;;;;;;;;;;
 ;;;; emberjs
+(defcustom ember-script-file-types
+  '("coffee" "js")
+  "Filetypes used for script files.  These are the javascript and the coffeescript file.
+
+The first item in this list is used as the 'default', used when creating files."
+  :type '(repeat string)
+  :group 'ember)
+
+(defcustom ember-template-file-types
+  '("hbs" "html" "handlebars")
+  "Filetypes used for snippet files.  These are the handlebars and html source files.
+
+The first item in this list is used as the 'default', used when creating files."
+  :type '(repeat string)
+  :group 'ember)
+
 (defun ember--relative-ember-source-path (base-class base-type target-kind)
   "Supplies a list of plausible paths to an ember source file given
 its core components.  The paths are returned as a list of strings,
@@ -142,13 +158,15 @@ Sources are specified in ember by a few orthogonal factors:
         ((for-each-js-ext (&body body)
            "expect users to supply a body which is to be executed for each
             known javascript file extension.  collects the results in a list."
-           `(loop for ext in '(".coffee" ".js")
-              collect (progn ,@body)))
+           (let ((exts (mapcar (lambda (x) (concat "." x)) ember-script-file-types)))
+             `(loop for ext in ',exts
+                    collect (progn ,@body))))
          (for-each-hbs-ext (&body body)
            "expect users to supply a body which is to be executed for each
             known handlebars file extension.  collects the results in a list."
-           `(loop for ext in '(".hbs" ".handlebars")
-              collect (progn ,@body)))
+           (let ((exts (mapcar (lambda (x) (concat "." x)) ember-template-file-types)))
+             `(loop for ext in ',exts
+                    collect (progn ,@body))))
          (define-matchers (&body matchers)
            "expect users to supply a set of matches as
               (regex-for-base-type regex-for-target-kind match-lambda)
@@ -223,8 +241,7 @@ file."
                                                   (list (file-name-base relative-path)))
                                           "/")))
       ;; (list maybe-base-class maybe-base-type extension)
-      (let ((kind (if (or (string= extension "coffee")
-                          (string= extension "js"))
+      (let ((kind (if (find extension ember-script-file-types :test #'string=)
                       "source" "template")))
         ;; todo: discover index
         (save-excursion
