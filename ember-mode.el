@@ -95,8 +95,8 @@
           (t noun))))
            
 
-;;;;;;;;;;;;
-;;;; emberjs
+;;;;;;;;;;;;;;;;;;;;
+;;; General Settings
 (defcustom ember-script-file-types
   '("coffee" "js")
   "Filetypes used for script files.  These are the javascript and the coffeescript file.
@@ -112,6 +112,10 @@ The first item in this list is used as the 'default', used when creating files."
 The first item in this list is used as the 'default', used when creating files."
   :type '(repeat string)
   :group 'ember)
+
+
+;;;;;;;;;;;;;;
+;;; Navigation
 
 (defun ember--relative-ember-source-path (base-class base-type target-kind)
   "Supplies a list of plausible paths to an ember source file given
@@ -320,6 +324,9 @@ file."
   (interactive)
   (ember-open-file-by-type "view"))
 
+
+;;;;;;;;;;;;;;;
+;;; Keybindings
 
 (defvar ember-mode-keymap (make-sparse-keymap)
   "Keymap for ember-mode.")
