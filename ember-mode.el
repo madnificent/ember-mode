@@ -206,7 +206,7 @@ Sources are specified in ember by a few orthogonal factors:
   ;; for the current implementation this basically walks up the tree until
   ;; it sees an app folder and assumes the folder containing the app folder
   ;; is the root of the ember project.
-  (locate-dominating-file (or load-file-name buffer-file-name) "app"))
+  (locate-dominating-file (or load-file-name buffer-file-name default-directory) "app"))
 
 (defun ember--join-strings (list join-string)
   "Joins the list of strings by the supplied separator"
