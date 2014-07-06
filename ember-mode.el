@@ -325,6 +325,92 @@ file."
   (ember-open-file-by-type "view"))
 
 
+;;;;;;;;;;;;;;
+;;; Generators
+
+(defun ember--match-by-index (regex string index)
+  (save-match-data
+    (and (string-match regex string)
+         (match-string index string))))
+
+(defun ember-generate (generator kind options)
+  "Runs an ember generator."
+  (interactive (ember--interactive-generator-options))
+  (let ((default-directory (ember--current-project-root)))
+    (let ((response
+           (shell-command-to-string (concat "ember generate " generator " " kind " " options))))
+      (message response)
+      ;; open the first file that was created
+      (find-file (concat default-directory "/" 
+                         (ember--match-by-index "\s+create\s+\\(.*\\)" response 1))))))
+
+(defun ember-generate-controller (kind options)
+  "Generates a controller."
+  (interactive (ember--interactive-generator-options "controller"))
+  (ember-generate "controller" kind options))
+
+(defun ember-generate-component (kind options)
+  "Generates a component."
+  (interactive (ember--interactive-generator-options "component"))
+  (ember-generate "component" kind options))
+
+(defun ember-generate-model (kind options)
+  "Generates a model."
+  (interactive (ember--interactive-generator-options "model"))
+  (ember-generate "model" kind options))
+
+(defun ember-generate-route (kind options)
+  "Generates a route."
+  (interactive (ember--interactive-generator-options "route"))
+  (ember-generate "route" kind options))
+
+(defun ember-generate-template (kind options)
+  "Generates a template."
+  (interactive (ember--interactive-generator-options "template"))
+  (ember-generate "template" kind options))
+
+(defun ember--interactive-generator-options 
+  (&optional supplied-generator supplied-kind)
+  "Generates a function interactive statement which ensures the
+arguments for the generator are known.
+
+The interative statement will try to find all unknown values from
+`ember--current-file-compononents'.
+
+If a value was supplied to this macro directly, then that value will
+be assumed to be the final value.
+
+The user will be queried for all values which weren't supplied and
+which could not be found by `ember--current-file-components' or if the
+user has supplied a prefix-argument.  In the case of a prefix argument
+all values not supplied by SUPPLIED-GENERATOR or SUPPLIED-KIND will be
+queried with the default being the value found by
+`ember--current-file-components'."
+  (destructuring-bind (current-base-class current-base-kind current-target-kind)
+      ;; fetch current values from current-file-components
+      (condition-case err 
+          (ember--current-file-components)
+        ('error (list nil nil nil)))
+    ;; ask the user to override
+    (destructuring-bind (new-generator new-kind new-options)
+        (if (or current-prefix-arg
+                (and (not supplied-generator) (not supplied-kind)))
+            (let ((generator (or supplied-generator (read-string "Generator: " current-base-kind)))
+                  (kind (or supplied-kind (read-string "Kind: " current-base-class)))
+                  (options (read-string "Options: " "")))
+              (list generator kind options))
+          (let ((generator (or supplied-generator current-base-kind (read-string "Generator: ")))
+                (kind (or supplied-kind current-base-class (read-string "Kind: "))))
+            (list generator kind "")))
+      ;; figure out which values we should return
+      (let ((result (list new-options)))
+        (unless supplied-kind 
+          (push new-kind result))
+        (unless supplied-generator
+          (push new-generator result))
+        result))))
+
+
 ;;;;;;;;;;;;;;;
 ;;; Keybindings
 
@@ -339,6 +425,15 @@ file."
 (define-key ember-mode-keymap (kbd "C-c c f t") #'ember-open-template)
 (define-key ember-mode-keymap (kbd "C-c c f s") #'ember-open-javascript)
 (define-key ember-mode-keymap (kbd "C-c c f v") #'ember-open-view)
+
+(define-key ember-mode-keymap (kbd "C-c c g g") #'ember-generate)
+(define-key ember-mode-keymap (kbd "C-c c g p") #'ember-generate-component)
+(define-key ember-mode-keymap (kbd "C-c c g c") #'ember-generate-controller)
+(define-key ember-mode-keymap (kbd "C-c c g m") #'ember-generate-model)
+(define-key ember-mode-keymap (kbd "C-c c g r") #'ember-generate-route)
+(define-key ember-mode-keymap (kbd "C-c c g t") #'ember-generate-template)
+(define-key ember-mode-keymap (kbd "C-c c g s") #'ember-generate-javascript)
+(define-key ember-mode-keymap (kbd "C-c c g v") #'ember-generate-view)
 
 (define-minor-mode ember-mode
   "Mode for navigating around ember applications"
