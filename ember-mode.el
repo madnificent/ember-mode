@@ -286,11 +286,8 @@ file."
             do 
                (find-file absolute-file)
                (return-from found-file absolute-file))
-      (let* ((rel-file (first file-list))
-             (abs-file (concat ember-root rel-file)))
-        (when (y-or-n-p (format "File not found.  Create [%s]?" rel-file))
-          (find-file abs-file)
-          (return-from found-file abs-file))))))
+      (when (y-or-n-p (format "File not found.  Generate [%s %s]?" base-type base-class))
+        (ember-generate base-type base-class "")))))
 
 (defun ember-open-component ()
   (interactive)
