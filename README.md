@@ -9,9 +9,13 @@ Ember-mode speeds up navigation in EmberJS projects.
 
 ## Usage ##
 
-Ember-mode helps in jumping between related files in an emberjs project.  It assumes an ember-cli-like folder-structure and supports both coffeescript and javascript extensions.
+Ember-mode helps in jumping and generating javascript files in an emberjs project.  It assumes an ember-cli-like folder-structure and supports both coffeescript and javascript extensions.
 
 ### example usage ###
+
+`ember-mode` can be used to either generate, or navigate between files.
+
+#### example setting ####
 
 Let's assume you have the following files in your emberjs folder structure:
 
@@ -29,18 +33,40 @@ Let's assume you have the following files in your emberjs folder structure:
             - friends
                 - show.coffee
 
-Say you are visiting the `models/friend.coffee` file with `ember-mode` enabled.  Pressing `C-c c r` will move to `routes/friends.coffee`.
 
-If, from there on, you enter `C-c c c` ember-mode will try to open `controllers/friends.coffee`.  As that doesn't exist, it'll try all of the following:
+
+
+#### navigation ####
+
+Say you are visiting the `models/friend.coffee` file with `ember-mode` enabled.  Pressing `C-c c f r` will move to `routes/friends.coffee`.
+
+If, from there on, you enter `C-c c f c` ember-mode will try to open `controllers/friends.coffee`.  As that doesn't exist, it'll try all of the following:
 
     - controllers/friends.js
     - controllers/friend.coffee
     - controllers/friend.js
 
-As none of these exist, it asks to create `controllers/friends.coffee` instead.
+As none of these exist, it asks to generate the friends controller instead.  If you choose
+to generate the controller, it will be opened right after.
 
-So that's basically it, quickly and easily navigate between files in an emberjs project.
 
+#### automatic generation ####
+
+Say we are visiting `models/friend.coffee` and want to generate the `friend` route.  Pressing `C-c c g r` will use the ember generators to generate the route and open it.
+
+Note that pressing `C-c c f r` would have navigated to `routes/friends.coffee` and wouldn't have found the generated route.
+
+
+#### manual generation ####
+
+Say that we want to generate a new model, for which we don't have a related resource yet.  We are visiting `routes/plugins.coffee` and would like to generate a `Peer` model.  Pressing `C-u C-c c g m` will ask for the name of the class to generate and the options to be passed to the generator.  The default values are derived from the current location.
+
+
+*PRO TIP:* If you are using coffeescript, enable `ember-cli-coffeescript` to generate coffeescript instead of javascript files.
+
+    cd path/to/your/ember-cli-project
+    npm install ember-cli-coffeescript --save-dev
+    
 
 ### published bindings ###
 
@@ -52,6 +78,16 @@ So that's basically it, quickly and easily navigate between files in an emberjs 
     C-c c f s       ember-open-javascript
     C-c c f t       ember-open-template
     C-c c f v       ember-open-view
+
+    C-c c g c       ember-generate-controller
+    C-c c g m       ember-generate-model
+    C-c c g o       ember-generate-router
+    C-c c g p       ember-generate-component
+    C-c c g r       ember-generate-route
+    C-c c g s       ember-generate-javascript
+    C-c c g t       ember-generate-template
+    C-c c g v       ember-generate-view
+    C-c c g g       ember-generate
 
 
 ## Installation ##
