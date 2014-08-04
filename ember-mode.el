@@ -117,6 +117,102 @@ The first item in this list is used as the 'default', used when creating files."
 ;;;;;;;;;;;;;;
 ;;; Navigation
 
+(defvar *ember--matcher-templates* nil
+  "Contains a list of all file templates
+
+A file template is a list containing:
+- the base type    (eg: component)
+- the target kind  (eg: source)
+- the file path  (eg: (list \"app/components/\" :class \".\" :extension))
+
+From the string base, a type can be built.")
+
+(defun ember--define-matcher (base-type-regex target-kind base-location)
+  "Adds a matcher to the end of the list of *EMBER--MATCHER-TEMPLATES*"
+  (setf *ember--matcher-templates*
+        (append *ember--matcher-templates*
+                (list (list base-type-regex target-kind base-location)))))
+
+(defmacro ember--define-matchers (&rest matchers)
+  `(progn ,@(loop for matcher in matchers collect 
+                  `(ember--define-matcher ,(car matcher) ,(cadr matcher)
+                                          (list ,@(caddr matcher))))))
+
+(ember--define-matchers 
+   ;; BEGIN contains the definition for each matcher
+   ;; the first two columns are a regexp, the rest is executed as code
+   ;; base-type  | target-kind | concatenation lambda body
+   ("router"       ".*"          ("app/router" :jsext))
+   ("^route$"      "source"      ("app/routes/" :class "." :jsext))
+   ("model"        "source"      ("app/models/" :class "." :jsext))
+   ("view"         "source"      ("app/views/" :class "." :jsext))
+   ("component"    "source"      ("app/components/" :class "." :jsext))
+   ("controller"   "source"      ("app/controllers/" :class "." :jsext))
+   ("template"     ".*"          ("app/templates/" :class "." :hbext))
+   ("index"        ".*"          ("app/templates/" :class "/index" "." :hbext))
+   ("component"    "template"    ("app/templates/components/" :class "." :hbext))
+   (".*"           "template"    ("app/templates/" :class "." :hbext))
+   ;; END contains the definition of each matcher
+   )
+
+(defun ember--matcher-partial-fill (matcher &rest options)
+  "Fills in the parts of MATCHER which could be filled in with the
+supplied OPTIONS.
+
+OPTIONS is expected to be a plist containing the keywords
+:extension and :class if they are available."
+  (loop for item in matcher
+        for substitution = (getf options item)
+        if substitution
+        collect substitution
+        else
+        collect item))
+
+(defun ember--matcher-relative-path (matcher &rest options)
+  "Constructs the relative path for MATCHER, given the options in OPTIONS
+
+OPTIONS should be an alist containing the keywords :CLASS and
+:EXTENSION.  Some matchers may not require both to be supplied."
+  (apply #'concat
+         (loop for item in 
+               (apply #'ember--matcher-partial-fill matcher options)
+               if (stringp item) collect item
+               else collect "")))
+
+(defun ember--matcher-matches-p (matcher base-type target-kind)
+  "Returns non-nil if MATCHER matches BASE-TYPE and TARGET-KIND"
+  (destructuring-bind (base-type-regexp target-kind-regexp)
+      matcher
+    (and (string-match base-type-regexp base-type)
+         (string-match target-kind-regexp target-kind))))
+
+(defun ember--matcher-templates-for (base-type target-kind)
+  "Returns the matcher templates which match BASE-TYPE and TARGET-KIND
+in the order in which the matchers have been defined."
+  (loop for (base-type-regexp target-kind-regexp matcher-template) in *ember--matcher-templates*
+        if (and (string-match base-type-regexp base-type)
+                (string-match target-kind-regexp target-kind))
+        collect matcher-template))
+
+(defun ember--matcher-hbs-template-p (matcher-template)
+  "Returns non-nil iff the matcher-template has a handlebars-extension"
+  (find :hbext matcher-template))
+
+(defun ember--matcher-js-template-p (matcher-template)
+  "Returns non-nil iff the matcher-template has a javascript-extension"
+  (find :jsext matcher-template))
+
+(defun ember--matcher-template-map-extensions (matcher-template)
+  "Returns a new matcher-template for each of the file-types which fit
+the matcher-template"
+  (cond ((ember--matcher-js-template-p matcher-template)
+         (loop for ext in ember-script-file-types collect
+               (ember--matcher-partial-fill matcher-template :jsext ext)))
+        ((ember--matcher-hbs-template-p matcher-template)
+         (loop for ext in ember-template-file-types collect
+               (ember--matcher-partial-fill matcher-template :hbext ext)))
+        (t (list matcher-template))))
+
 (defun ember--relative-ember-source-path (base-class base-type target-kind)
   "Supplies a list of plausible paths to an ember source file given
 its core components.  The paths are returned as a list of strings,
@@ -157,53 +253,14 @@ Sources are specified in ember by a few orthogonal factors:
       - template
       - source
       - (blank)"
-  (let (matchers)
-    (cl-macrolet
-        ((for-each-js-ext (&body body)
-           "expect users to supply a body which is to be executed for each
-            known javascript file extension.  collects the results in a list."
-           (let ((exts (mapcar (lambda (x) (concat "." x)) ember-script-file-types)))
-             `(loop for ext in ',exts
-                    collect (progn ,@body))))
-         (for-each-hbs-ext (&body body)
-           "expect users to supply a body which is to be executed for each
-            known handlebars file extension.  collects the results in a list."
-           (let ((exts (mapcar (lambda (x) (concat "." x)) ember-template-file-types)))
-             `(loop for ext in ',exts
-                    collect (progn ,@body))))
-         (define-matchers (&body matchers)
-           "expect users to supply a set of matches as
-              (regex-for-base-type regex-for-target-kind match-lambda)
-            in which the first two are strings and the latter is the body
-            of a lambda function which is executed with the bindings
-            class, type and target for base-class, base-typ and target-kind
-            respectively."
-           `(progn
-              ,@(loop for matcher in matchers collect
-                      `(setf matchers
-                             (append matchers 
-                                     (list (list ,(first matcher) ,(second matcher)
-                                                 (lambda (class type target) ,@(cddr matcher))))))))))
-      (define-matchers
-        ;; BEGIN contains the definition for each matcher
-        ;; the first two columns are a regexp, the rest is executed as code
-        ;; base-type | target-kind | concatenation lambda body
-        ("router"      ".*"          (for-each-js-ext (concat "app/router" ext)))
-        ("^route$"     "source"      (for-each-js-ext (concat "app/routes/" class ext)))
-        ("model"       "source"      (for-each-js-ext (concat "app/models/" class ext)))
-        ("view"        "source"      (for-each-js-ext (concat "app/views/"  class ext)))
-        ("component"   "source"      (for-each-js-ext (concat "app/components/" class ext)))
-        ("controller"  "source"      (for-each-js-ext (concat "app/controllers/" class ext)))
-        ("template"    ".*"          (for-each-hbs-ext (concat "app/templates/" class extension)))
-        ("index"       ".*"          (for-each-hbs-ext (concat "app/templates/" class "/index" ext)))
-        ("component"   "template"    (for-each-hbs-ext (concat "app/templates/components/" class ext)))
-        (".*"          "template"    (for-each-hbs-ext (concat "app/templates/" class ext)))
-        ;; END contains the definition of each matcher
-        ))
-    (loop for (base-type-regexp target-kind-regexp functor) in matchers
-          if (and (string-match base-type-regexp base-type)
-                  (string-match target-kind-regexp target-kind))
-          return (funcall functor base-class base-type target-kind))))
+  (let ((templates (ember--matcher-templates-for base-type target-kind)))
+    (when templates
+      (mapcar #'ember--matcher-relative-path
+              (ember--matcher-template-map-extensions
+               (ember--matcher-partial-fill (first templates)
+                                            :class base-class
+                                            :base-type base-type
+                                            :target-kind target-kind))))))
 
 (defun ember--current-project-root ()
   "Returns the root folder of the current ember project."
@@ -267,6 +324,10 @@ file."
   (destructuring-bind (base-class base-type target-kind)
       (ember--current-file-components)
     (ember-generic-open-file base-class base-type kind)))
+
+(defun ember-list-files-by-kind (kind)
+  "Opens an ember file based on its kind"
+)
 
 (defun ember-generic-open-file (base-class base-type target-kind)
   "Tries to open the ember file specified by BASE-CLASS, BASE-TYPE and TARGET-KIND.
