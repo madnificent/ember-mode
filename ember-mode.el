@@ -125,39 +125,43 @@ A file template is a list containing:
 - the target kind  (eg: source)
 - the file path  (eg: (list \"app/components/\" :class \".\" :extension))
 
+It is assumed that the base-type and target-kind regexes don't contain parens,
+ember--relative-file-components makes use of this assumption.
+
 From the string base, a type can be built.")
 
-(defun ember--define-matcher (base-type-regex target-kind base-location)
+(cl-defun ember--define-matcher (base-type-regex target-kind base-location &optional (base-type base-type-regex))
   "Adds a matcher to the end of the list of *EMBER--MATCHER-TEMPLATES*"
   (setf *ember--matcher-templates*
         (append *ember--matcher-templates*
-                (list (list base-type-regex target-kind base-location)))))
+                (list (list base-type-regex target-kind base-location base-type)))))
 
 (defmacro ember--define-matchers (&rest matchers)
   `(progn ,@(loop for matcher in matchers collect 
                   `(ember--define-matcher ,(car matcher) ,(cadr matcher)
-                                          (list ,@(caddr matcher))))))
+                                          (list ,@(caddr matcher))
+                                          ,@(cdddr matcher)))))
 
 (ember--define-matchers 
    ;; BEGIN contains the definition for each matcher
    ;; the first two columns are a regexp, the rest is executed as code
-   ;; base-type  | target-kind | concatenation lambda body
-   ("router"       ".*"          ("app/router" :jsext))
-   ("^route$"      "source"      ("app/routes/" :class "." :jsext))
+   ;; base-type  | target-kind | concatenation lambda body                        | override base-type
+   ("router"       ".*"          ("app/router" "." :jsext))
+   ("^route$"      "source"      ("app/routes/" :class "." :jsext)                  "route")
    ("model"        "source"      ("app/models/" :class "." :jsext))
    ("view"         "source"      ("app/views/" :class "." :jsext))
    ("component"    "source"      ("app/components/" :class "." :jsext))
    ("controller"   "source"      ("app/controllers/" :class "." :jsext))
-   ("template"     ".*"          ("app/templates/" :class "." :hbext))
-   ("index"        ".*"          ("app/templates/" :class "/index" "." :hbext))
    ("component"    "template"    ("app/templates/components/" :class "." :hbext))
-   (".*"           "template"    ("app/templates/" :class "." :hbext))
+   ("index"        ".*"          ("app/templates/" :class "/index" "." :hbext))
+   ("template"     ".*"          ("app/templates/" :class "." :hbext))
+   (".*"           "template"    ("app/templates/" :class "." :hbext)               "template")
    ;; END contains the definition of each matcher
    )
 
-(defun ember--matcher-partial-fill (matcher &rest options)
-  "Fills in the parts of MATCHER which could be filled in with the
-supplied OPTIONS.
+(defun ember--matcher-partial-fill (matcher-template &rest options)
+  "Fills in the parts of MATCHER-TEMPLATE which could be filled in
+with the supplied OPTIONS.
 
 OPTIONS is expected to be a plist containing the keywords
 :extension and :class if they are available."
@@ -168,8 +172,9 @@ OPTIONS is expected to be a plist containing the keywords
         else
         collect item))
 
-(defun ember--matcher-relative-path (matcher &rest options)
-  "Constructs the relative path for MATCHER, given the options in OPTIONS
+(defun ember--matcher-relative-path (matcher-template &rest options)
+  "Constructs the relative path for MATCHER-TEMPLATE, given the options
+in OPTIONS
 
 OPTIONS should be an alist containing the keywords :CLASS and
 :EXTENSION.  Some matchers may not require both to be supplied."
@@ -190,8 +195,8 @@ OPTIONS should be an alist containing the keywords :CLASS and
   "Returns the matcher templates which match BASE-TYPE and TARGET-KIND
 in the order in which the matchers have been defined."
   (loop for (base-type-regexp target-kind-regexp matcher-template) in *ember--matcher-templates*
-        if (and (string-match base-type-regexp base-type)
-                (string-match target-kind-regexp target-kind))
+        if (and (string-match base-type-regexp (or base-type ""))
+                (string-match target-kind-regexp (or target-kind "")))
         collect matcher-template))
 
 (defun ember--matcher-hbs-template-p (matcher-template)
@@ -212,6 +217,42 @@ the matcher-template"
          (loop for ext in ember-template-file-types collect
                (ember--matcher-partial-fill matcher-template :hbext ext)))
         (t (list matcher-template))))
+
+(defun ember--regex-escape-matcher-template (matcher-template)
+  "Returns the same matcher but in which the components can be used in
+a regular expression.  The most common regex patterns will have been
+replaced."
+  (let ((symbols-to-replace (list "." "+" "*")))
+    (loop for char in symbols-to-replace
+          do (setf matcher-template
+                   (loop for component in matcher-template
+                         if (stringp component)
+                         collect (replace-regexp-in-string (concat "\\" char)
+                                                           (concat "\\\\" char)
+                                                           component)
+                         else
+                         collect component)))
+    matcher-template))
+
+(defun ember--matcher-matches-file-p (matcher relative-path)
+  "Returns non-nil iff MATCHER matches RELATIVE-PATH.
+If this returns non-nil, a PLIST is returned which maps the variables in the
+template to their corresponding values in RELATIVE-PATH."
+  (let ((matcher-component-list (third matcher)))
+    (let ((component-symbols (loop for component in matcher-component-list
+                                   if (symbolp component)
+                                   collect component)))
+      (let ((template-regex
+             (apply #'ember--matcher-relative-path 
+                    (ember--regex-escape-matcher-template matcher-component-list)
+                    (loop for symbol in component-symbols append
+                          (list symbol "\\(.+\\)")))))
+        (save-match-data
+          (when (string-match template-regex relative-path)
+            (loop for component-symbol in component-symbols
+                  for index from 1
+                  append
+                  (list component-symbol (match-string index relative-path)))))))))
 
 (defun ember--relative-ember-source-path (base-class base-type target-kind)
   "Supplies a list of plausible paths to an ember source file given
@@ -269,50 +310,47 @@ Sources are specified in ember by a few orthogonal factors:
   ;; is the root of the ember project.
   (locate-dominating-file (or load-file-name buffer-file-name default-directory) "app"))
 
-(defun ember--join-strings (list join-string)
-  "Joins the list of strings by the supplied separator"
-  (apply #'concat (rest (loop for str in list append (list join-string str)))))
+;; (defun ember--join-strings (list join-string)
+;;   "Joins the list of strings by the supplied separator"
+;;   (apply #'concat (rest (loop for str in list append (list join-string str)))))
 
-(defun ember--relative-directory-components (file)
-  "Returns the components of which the relative directory of file consists."
-  ;; I assume split-string will work on non-unix systems because the function
-  ;; `convert-standard-filename` exists and I like to think in a world with
-  ;; consistent definitions.
-  ;; note: by using `directory-file-name` we strip the last empty component
-  (split-string (directory-file-name (file-name-directory file)) "/"))
+;; (defun ember--relative-directory-components (file)
+;;   "Returns the components of which the relative directory of file consists."
+;;   ;; I assume split-string will work on non-unix systems because the function
+;;   ;; `convert-standard-filename` exists and I like to think in a world with
+;;   ;; consistent definitions.
+;;   ;; note: by using `directory-file-name` we strip the last empty component
+;;   (split-string (directory-file-name (file-name-directory file)) "/"))
 
-(defun ember--current-file-components ()
-  "returns a list containing the components upon which make up this ember
-source file.
+(defun ember--relative-file-components (file)
+  "returns a list containing the components which make up this ember source
+file.
 
 the components are defined in `ember--relative-ember-source-path`.  this function
 returns the base-class, the base-type and the target-kind of the current
 file."
-  ;; in this, the base type can normally be derived from the top level
-  ;; folder (which is the one right underneath app).  the extension of
-  ;; the file con be used to determine the type of the file.  anything
-  ;; in between can be considered to be the class of the file (in most
-  ;; cases).
-  (let* ((relative-path (file-relative-name (or load-file-name buffer-file-name)
-                                            (ember--current-project-root)))
-         (rep-dir-components (ember--relative-directory-components relative-path)))
-    (let ((extension (file-name-extension relative-path))
-          (maybe-base-type (second rep-dir-components))
-          (maybe-base-class (ember--join-strings (append (cddr rep-dir-components)
-                                                  (list (file-name-base relative-path)))
-                                          "/")))
-      ;; (list maybe-base-class maybe-base-type extension)
-      (let ((kind (if (find extension ember-script-file-types :test #'string=)
-                      "source" "template")))
-        ;; todo: discover index
-        (save-excursion
-          (cond ((and (string= maybe-base-type "templates")
-                      (string-match-p "^components/\\(.*\\)$" maybe-base-class))
-                 (list (substring maybe-base-class (length "components/"))
-                       "component"
-                       "template"))
-                (t (list maybe-base-class (ember--singularize-noun maybe-base-type) kind))))))))
-          
+  (let ((components-and-matcher
+         (loop for matcher in *ember--matcher-templates*
+               for components = (ember--matcher-matches-file-p matcher file)
+               if components
+               return (list components matcher))))
+    (when components-and-matcher
+      (destructuring-bind (components matcher) components-and-matcher
+        (let ((base-class (getf components :class))
+              (base-type  (fourth matcher))
+              (target-kind (cond
+                            ((find (getf components :jsext) ember-script-file-types :test #'equal)
+                             "source")
+                            ((find (getf components :hbext) ember-template-file-types :test #'equal)
+                             "template"))))
+          (list base-class base-type target-kind))))))
+
+(defun ember--current-file-components ()
+  "returns a list containing the components which make up this ember source
+file."
+  (ember--relative-file-components (file-relative-name (or load-file-name buffer-file-name)
+                                                       (ember--current-project-root))))
+
 (cl-defun ember-open-file-by-type (type &optional (assume-js t))
   "Opens an ember file for a given kind"
   (destructuring-bind (base-class base-type target-kind)
@@ -333,6 +371,9 @@ file."
   "Tries to open the ember file specified by BASE-CLASS, BASE-TYPE and TARGET-KIND.
    If no such file was found, it tries to find related files or requests the user
    if the file should be created."
+  (message (concat "Generating file for " (format "%S" (list base-class base-type target-kind))))
+  (unless base-class
+    (setf base-class ""))
   (let ((ember-root (ember--current-project-root))
         (file-list
          ;; pick the files and their alternatives, so we have a good list
@@ -340,6 +381,7 @@ file."
          (append (ember--relative-ember-source-path base-class base-type target-kind)
                  (ember--relative-ember-source-path (ember--pluralize-noun base-class) base-type target-kind)
                  (ember--relative-ember-source-path (ember--singularize-noun base-class) base-type target-kind))))
+    (message (concat "Found files: " (format "%S" file-list)))
     (block found-file
       (loop for relative-file in file-list
             for absolute-file = (concat ember-root relative-file)
@@ -347,7 +389,9 @@ file."
             do 
                (find-file absolute-file)
                (return-from found-file absolute-file))
-      (when (y-or-n-p (format "File not found.  Generate [%s %s]?" base-type base-class))
+      (when (string= target-kind "template")
+        (setf base-type "template"))
+      (when (y-or-n-p (format "File not found.  Generate [%S %S]?" base-type base-class))
         (ember-generate base-type base-class "")))))
 
 (defun ember-open-component ()
