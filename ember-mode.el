@@ -557,13 +557,13 @@ queried with the default being the value found by
     (destructuring-bind (new-generator new-kind new-options)
         (if (or current-prefix-arg
                 (and (not supplied-generator) (not supplied-kind)))
-            (let ((generator (or supplied-generator (read-string "Generator: " current-base-kind)))
-                  (kind (or supplied-kind (read-string "Kind: " current-base-class)))
-                  (options (read-string "Options: " "")))
-              (list generator kind options))
-          (let ((generator (or supplied-generator current-base-kind (read-string "Generator: ")))
-                (kind (or supplied-kind current-base-class (read-string "Kind: "))))
-            (list generator kind "")))
+            (let* ((generator (or supplied-generator current-base-kind (read-string "Generator: ")))
+                   (kind (or supplied-kind current-base-class (read-string (concat "Generating " generator " for kind: ")))))
+              (list generator kind ""))
+          (let* ((generator (or supplied-generator (read-string "Generator: " current-base-kind)))
+                 (kind (or supplied-kind (read-string (concat "Generating " generator " for kind: ") current-base-class)))
+                 (options (read-string "Options: " "")))
+            (list generator kind options)))
       ;; figure out which values we should return
       (let ((result (list new-options)))
         (unless supplied-kind 
