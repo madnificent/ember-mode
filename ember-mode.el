@@ -321,18 +321,6 @@ Sources are specified in ember by a few orthogonal factors:
 (defun ember--file-project-root (file)
   (locate-dominating-file file "app"))
 
-;; (defun ember--join-strings (list join-string)
-;;   "Joins the list of strings by the supplied separator"
-;;   (apply #'concat (rest (loop for str in list append (list join-string str)))))
-
-;; (defun ember--relative-directory-components (file)
-;;   "Returns the components of which the relative directory of file consists."
-;;   ;; I assume split-string will work on non-unix systems because the function
-;;   ;; `convert-standard-filename` exists and I like to think in a world with
-;;   ;; consistent definitions.
-;;   ;; note: by using `directory-file-name` we strip the last empty component
-;;   (split-string (directory-file-name (file-name-directory file)) "/"))
-
 (defun ember--relative-file-components (file)
   "returns a list containing the components which make up this ember source
 file.
@@ -372,7 +360,7 @@ file."
   (destructuring-bind (base-class base-type target-kind)
       (ember--current-file-components)
     (if (equal type base-type)
-        (ember--select-file-by-type-and-kind base-type target-kind)
+        (ember--select-file-by-type-and-kind (concat "Open " type ": ") base-type target-kind)
       (ember-generic-open-file base-class type (if assume-js "source" target-kind)))))
 
 (defun ember-open-file-by-kind (kind)
@@ -385,16 +373,10 @@ file."
   "Returns the matcher template for MATCHER"
   (third matcher))
 
-;; (defmacro ember--rcurry (func &rest solid-args)
-;;   "Reverse curry combinator"
-;;   `(lambda (&rest flexi-args)
-;;      (apply ,func (append flexi-args ,@solid-args))))
-
 (defmacro ember--appendf (list-location appended-list)
   "Appends APPENDED-LIST to the list on LIST-LOCATION and stores the resulting list
 in said location."
   `(setf ,list-location (append ,list-location ,appended-list)))
-
 
 (defun ember--list-files-by-type-and-kind (base-type target-kind)
   "List files in DIRECTORY and in its sub-directories. 
@@ -421,12 +403,17 @@ in said location."
     (setf matching-files (mapcar #'ember--file-relative-to-root matching-files))
     matching-files))
 
-(defun ember--select-file-by-type-and-kind (base-type target-kind)
+(defun ember--completing-read (question matches)
+  "A smarter completing-read which poses QUESTION with matches being MATCHES.
+This replacement uses ido-mode if possible."
+  (if (fboundp 'ido-completing-read)
+      (ido-completing-read question matches)
+    (completing-read question matches)))
+
+(defun ember--select-file-by-type-and-kind (question base-type target-kind)
   "Opens an ember file based on its kind"
   (let ((potential-matches (ember--list-files-by-type-and-kind base-type target-kind)))
-    (let ((relative-file (if (fboundp 'ido-completing-read)
-                             (ido-completing-read "Not found, open " potential-matches)
-                           (completing-read "Not found, open " potential-matches))))
+    (let ((relative-file (ember--completing-read question potential-matches)))
       (when relative-file
         (find-file (concat (ember--current-project-root) relative-file))))))
 
@@ -452,7 +439,7 @@ in said location."
                (return-from found-file absolute-file))
       (when (string= target-kind "template")
         (setf base-type "template"))
-      (ember--select-file-by-type-and-kind base-type target-kind))))
+      (ember--select-file-by-type-and-kind "Not found, alternatives: " base-type target-kind))))
 
 (defun ember-open-component ()
   (interactive)
@@ -531,6 +518,12 @@ in said location."
   (interactive (ember--interactive-generator-options "template"))
   (ember-generate "template" kind options))
 
+(defun ember--generators ()
+  "Returns a list of all generators"
+  (split-string
+   (shell-command-to-string 
+    "ember help generate | grep -P '      (.*)' | grep -P -o '[a-z\\-]+' | sort | uniq")))
+
 (defun ember--interactive-generator-options 
   (&optional supplied-generator supplied-kind)
   "Generates a function interactive statement which ensures the
@@ -556,11 +549,14 @@ queried with the default being the value found by
     ;; ask the user to override
     (destructuring-bind (new-generator new-kind new-options)
         (if (or current-prefix-arg
-                (and (not supplied-generator) (not supplied-kind)))
-            (let* ((generator (or supplied-generator current-base-kind (read-string "Generator: ")))
+                supplied-generator
+                supplied-kind)
+            (let* ((generator (or supplied-generator current-base-kind 
+                                  (ember--completing-read "Generator: " (ember--generators))))
                    (kind (or supplied-kind current-base-class (read-string (concat "Generating " generator " for kind: ")))))
               (list generator kind ""))
-          (let* ((generator (or supplied-generator (read-string "Generator: " current-base-kind)))
+          (let* ((generator (or supplied-generator 
+                                (ember--completing-read "Generator: " (ember--generators))))
                  (kind (or supplied-kind (read-string (concat "Generating " generator " for kind: ") current-base-class)))
                  (options (read-string "Options: " "")))
             (list generator kind options)))
