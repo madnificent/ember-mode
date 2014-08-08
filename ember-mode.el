@@ -352,7 +352,7 @@ file."
   "returns a list containing the components which make up this ember source
 file."
   (or (ember--relative-file-components
-       (ember--file-relative-to-root (or load-file-name buffer-file-name)))
+       (ember--file-relative-to-root (or load-file-name buffer-file-name default-directory)))
       (list nil nil nil)))
 
 (cl-defun ember-open-file-by-type (type &optional (assume-js t))
