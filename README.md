@@ -33,9 +33,6 @@ Let's assume you have the following files in your emberjs folder structure:
             - friends
                 - show.coffee
 
-
-
-
 #### navigation ####
 
 Say you are visiting the `models/friend.coffee` file with `ember-mode` enabled.  Pressing `C-c c f r` will move to `routes/friends.coffee`.
@@ -46,23 +43,24 @@ If, from there on, you enter `C-c c f c` ember-mode will try to open `controller
     - controllers/friend.coffee
     - controllers/friend.js
 
-As none of these exist, it asks to generate the friends controller instead.  If you choose
-to generate the controller, it will be opened right after.
-
-
-#### automatic generation ####
-
-Say we are visiting `models/friend.coffee` and want to generate the `friend` route.  Pressing `C-c c g r` will use the ember generators to generate the route and open it.
-
-Note that pressing `C-c c f r` would have navigated to `routes/friends.coffee` and wouldn't have found the generated route.
+As none of these exist, it lists all controllers and lets you select one of them.
 
 
 #### manual generation ####
 
-Say that we want to generate a new model, for which we don't have a related resource yet.  We are visiting `routes/plugins.coffee` and would like to generate a `Peer` model.  Pressing `C-u C-c c g m` will ask for the name of the class to generate and the options to be passed to the generator.  The default values are derived from the current location.
+Say we are visiting `routes/plugins.coffee` and would like to generate a `Peer` model.  Pressing `C-c c g m` will ask for the name of the class to generate (with a default of `plugins`) and the options to be passed to the generator.  The default is hinted based on the current file.
+
+Similarly, if we are visiting `routes/plugins.coffee` and want to generate a controller, pressing `C-c c g c` will ask for the name of the controller to generate (with a default of `plugins`) and the options to be passed to the generator.  In essence, pressing enter twice will generate `controllers/plugins.coffee`.
 
 
-*PRO TIP:* If you are using coffeescript, enable `ember-cli-coffeescript` to generate coffeescript instead of javascript files.
+#### automatic generation ####
+
+Say we are visiting `models/friend.coffee` and want to generate the `friend` route.  Pressing `C-u C-c c g r` will use the ember generators to generate the route and open it (without posing any questions).
+
+Note that pressing `C-c c f r` would have navigated to `routes/friends.coffee` and wouldn't have found the newly generated route before.
+
+
+*PRO TIP:* If you are using coffeescript, enable `ember-cli-coffeescript` to generate coffeescript instead of javascript files.  If you don't, javascript files will be generated.
 
     cd path/to/your/ember-cli-project
     npm install ember-cli-coffeescript --save-dev
@@ -113,7 +111,3 @@ Say that we want to generate a new model, for which we don't have a related reso
    M-x ember-mode
    `
 
-
-    
-
-    
