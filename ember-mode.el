@@ -359,15 +359,20 @@ file."
   "Opens an ember file for a given kind"
   (destructuring-bind (base-class base-type target-kind)
       (ember--current-file-components)
-    (if (equal type base-type)
-        (ember--select-file-by-type-and-kind (concat "Open " type ": ") base-type target-kind)
-      (ember-generic-open-file base-class type (if assume-js "source" target-kind)))))
+    (let ((new-target-kind (if assume-js "source" target-kind)))
+      (if (and (equal type base-type)
+               (equal target-kind new-target-kind))
+          (ember--select-file-by-type-and-kind (concat "Open " type ": ") base-type new-target-kind)
+        (ember-generic-open-file base-class type new-target-kind)))))
 
 (defun ember-open-file-by-kind (kind)
-  "Opens an ember file for a given kind"
+  "Opens an ember file for a given kind.
+Kind being one of \"template\" or \"source\"."
   (destructuring-bind (base-class base-type target-kind)
       (ember--current-file-components)
-    (ember-generic-open-file base-class base-type kind)))
+    (if (equal kind target-kind)
+        (ember--select-file-by-type-and-kind (concat "Open " base-type ": ") base-type kind)
+      (ember-generic-open-file base-class base-type kind))))
 
 (defun get-matcher-template (matcher)
   "Returns the matcher template for MATCHER"
@@ -548,12 +553,11 @@ queried with the default being the value found by
         ('error (list nil nil nil)))
     ;; ask the user to override
     (destructuring-bind (new-generator new-kind new-options)
-        (if (or current-prefix-arg
-                supplied-generator
-                supplied-kind)
+        (if current-prefix-arg
             (let* ((generator (or supplied-generator current-base-kind 
                                   (ember--completing-read "Generator: " (ember--generators))))
-                   (kind (or supplied-kind current-base-class (read-string (concat "Generating " generator " for kind: ")))))
+                   (kind (or supplied-kind current-base-class
+                             (read-string (concat "Generating " generator " for kind: ")))))
               (list generator kind ""))
           (let* ((generator (or supplied-generator 
                                 (ember--completing-read "Generator: " (ember--generators))))
