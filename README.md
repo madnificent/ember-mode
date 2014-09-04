@@ -92,15 +92,15 @@ Note that pressing `C-c c f r` would have navigated to `routes/friends.coffee` a
 
 - clone this folder in your emacs.d folder:
 
-      mkdir -p ~/.emacs.d/
-      cd ~/.emacs.d
-      git clone https://github.com/madnificent/ember-mode.git
+        mkdir -p ~/.emacs.d/
+        cd ~/.emacs.d
+        git clone https://github.com/madnificent/ember-mode.git
 
 
 - add the folder to your load path in your `~/.emacs` file if it isn't there already and require ember-mode.
 
-      (add-to-list 'load-path "~/.emacs.d/ember-mode/")
-      (require 'ember-mode)
+        (add-to-list 'load-path "~/.emacs.d/ember-mode/")
+        (require 'ember-mode)
 
     
 - reload the settings, go to an ember project, enable ember-mode and try out your new keybindings!
