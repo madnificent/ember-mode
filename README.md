@@ -105,5 +105,5 @@ Note that pressing `C-c c f r` would have navigated to `routes/friends.coffee` a
     
 - reload the settings, go to an ember project, enable ember-mode and try out your new keybindings!
 
-      M-x ember-mode
+        M-x ember-mode
 
