@@ -406,7 +406,20 @@ in said location."
           (dolist (dir walk-now)
             (walk-directory dir)))))
     (setf matching-files (mapcar #'ember--file-relative-to-root matching-files))
-    matching-files))
+    (remove-if #'ember--temporary-file-p matching-files)))
+
+(defun ember--last-char (string)
+  "Returns the last character of the supplied string."
+  (string (elt string (1- (length string)))))
+
+(defun ember--temporary-file-p (filename)
+  "Returns non-nil iff FILENAME is a temporary file."
+  (message (format "checking filename %s" filename))
+  (or (equal (ember--last-char filename) "~")
+      (equal (string (elt filename 0)) "#")
+      (and (>= (length filename) 2)
+           (equal (string (elt filename 0)) ".")
+           (equal (string (elt filename 1)) "#"))))
 
 (defun ember--completing-read (question matches)
   "A smarter completing-read which poses QUESTION with matches being MATCHES.
