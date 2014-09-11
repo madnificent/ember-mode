@@ -39,7 +39,7 @@
 ;;;;;;;;;;;;;;;
 ;;;; Accounting
 
-;; Version 0.2
+;; Version 0.2.3
 ;; Author: Aad Versteden <madnificent@gmail.com>
 ;; Keywords: ember ember.js emberjs
 ;; License: MIT
@@ -101,7 +101,8 @@
   '("coffee" "js")
   "Filetypes used for script files.  These are the javascript and the coffeescript file.
 
-The first item in this list is used as the 'default', used when creating files."
+The first item in this list is used as the 'default', indicating
+the preference to look up this type of file."
   :type '(repeat string)
   :group 'ember)
 
@@ -125,8 +126,9 @@ A file template is a list containing:
 - the target kind  (eg: source)
 - the file path  (eg: (list \"app/components/\" :class \".\" :extension))
 
-It is assumed that the base-type and target-kind regexes don't contain parens,
-ember--relative-file-components makes use of this assumption.
+It is assumed that the base-type and target-kind regexes don't
+contain parens, `ember--relative-file-components' makes use of this
+assumption.
 
 From the string base, a type can be built.")
 
@@ -173,8 +175,8 @@ OPTIONS is expected to be a plist containing the keywords
         collect item))
 
 (defun ember--matcher-relative-path (matcher-template &rest options)
-  "Constructs the relative path for MATCHER-TEMPLATE, given the options
-in OPTIONS
+  "Constructs the relative path for MATCHER-TEMPLATE, given the
+options in OPTIONS.
 
 OPTIONS should be an alist containing the keywords :CLASS and
 :EXTENSION.  Some matchers may not require both to be supplied."
@@ -185,22 +187,24 @@ OPTIONS should be an alist containing the keywords :CLASS and
                else collect "")))
 
 (defun ember--matcher-matches-p (matcher base-type target-kind)
-  "Returns non-nil if MATCHER matches BASE-TYPE and TARGET-KIND"
+  "Returns non-nil iff MATCHER matches BASE-TYPE and TARGET-KIND."
   (destructuring-bind (base-type-regexp target-kind-regexp)
       matcher
     (and (string-match base-type-regexp base-type)
          (string-match target-kind-regexp target-kind))))
 
 (defun ember--matcher-templates-for (base-type target-kind)
-  "Returns the matcher templates which match BASE-TYPE and TARGET-KIND
-in the order in which the matchers have been defined."
+  "Returns the matcher templates which match BASE-TYPE and
+TARGET-KIND in the order in which the matchers have been
+defined."
   (loop for (base-type-regexp target-kind-regexp matcher-template) in *ember--matcher-templates*
         if (and (string-match base-type-regexp (or base-type ""))
                 (string-match target-kind-regexp (or target-kind "")))
         collect matcher-template))
 
 (defun ember--matchers-for (base-type target-kind)
-  "Similar to ember--matcher-templates-for, but returning the the whole matcher"
+  "Similar to ember--matcher-templates-for, but returning the the
+whole matcher"
   (loop for matcher in *ember--matcher-templates*
         for (base-type-regexp target-kind-regexp matcher-template) = matcher
         if (and (string-match base-type-regexp (or base-type ""))
@@ -246,7 +250,7 @@ replaced."
   "Returns non-nil iff MATCHER matches RELATIVE-PATH.
 If this returns non-nil, a PLIST is returned which maps the variables in the
 template to their corresponding values in RELATIVE-PATH."
-  (let ((matcher-template (get-matcher-template matcher)))
+  (let ((matcher-template (ember--get-matcher-template matcher)))
     (let ((component-symbols (loop for component in matcher-template
                                    if (symbolp component)
                                    collect component)))
@@ -322,10 +326,10 @@ Sources are specified in ember by a few orthogonal factors:
   (locate-dominating-file file "app"))
 
 (defun ember--relative-file-components (file)
-  "returns a list containing the components which make up this ember source
+  "Returns a list containing the components which make up this ember source
 file.
 
-the components are defined in `ember--relative-ember-source-path`.  this function
+The components are defined in `ember--relative-ember-source-path'.  This function
 returns the base-class, the base-type and the target-kind of the current
 file."
   (let ((components-and-matcher
@@ -345,18 +349,23 @@ file."
           (list base-class base-type target-kind))))))
 
 (defun ember--file-relative-to-root (file)
-  "returns the pathname relative to the current project's root"
+  "Returns the pathname of FILE relative to the current project's
+root."
   (file-relative-name file (ember--file-project-root file)))
 
 (defun ember--current-file-components ()
-  "returns a list containing the components which make up this ember source
-file."
+  "Returns a list containing the components which make up this
+ember source file."
   (or (ember--relative-file-components
        (ember--file-relative-to-root (or load-file-name buffer-file-name default-directory)))
       (list nil nil nil)))
 
 (cl-defun ember-open-file-by-type (type &optional (assume-js t))
-  "Opens an ember file for a given kind"
+  "Opens an ember file for TYPE with all base values assumed from
+the currently open file.
+
+ASSUME-JS is an override.  If this is true, it is assumed that a
+javascript (or coffeescript) source file should be opened."
   (destructuring-bind (base-class base-type target-kind)
       (ember--current-file-components)
     (let ((new-target-kind (if assume-js "source" target-kind)))
@@ -366,28 +375,31 @@ file."
         (ember-generic-open-file base-class type new-target-kind)))))
 
 (defun ember-open-file-by-kind (kind)
-  "Opens an ember file for a given kind.
-Kind being one of \"template\" or \"source\"."
+  "Opens an ember file for KIND.
+
+Kind should be one of \"template\" or \"source\"."
   (destructuring-bind (base-class base-type target-kind)
       (ember--current-file-components)
     (if (equal kind target-kind)
         (ember--select-file-by-type-and-kind (concat "Open " base-type ": ") base-type kind)
       (ember-generic-open-file base-class base-type kind))))
 
-(defun get-matcher-template (matcher)
-  "Returns the matcher template for MATCHER"
+(defun ember--get-matcher-template (matcher)
+  "Returns the matcher template for MATCHER."
   (third matcher))
 
 (defmacro ember--appendf (list-location appended-list)
-  "Appends APPENDED-LIST to the list on LIST-LOCATION and stores the resulting list
-in said location."
+  "Appends APPENDED-LIST to the list on LIST-LOCATION and stores
+the resulting list in LIST-LOCATION."
   `(setf ,list-location (append ,list-location ,appended-list)))
 
 (defun ember--list-files-by-type-and-kind (base-type target-kind)
-  "List files in DIRECTORY and in its sub-directories. 
-   Return files that match the regular expression MATCH but ignore     
-   files and directories that match IGNORE (IGNORE is tested before MATCH. Recurse only 
-   to depth MAXDEPTH. If zero or negative, then do not recurse"
+  "List files in DIRECTORY and in its sub-directories.
+
+Returns files that match the regular expression MATCH but ignore
+files and directories that match IGNORE (IGNORE is tested before
+MATCH. Recurse only to depth MAXDEPTH. Does not recurse if
+MAXDEPTH is zero or negative."
   (let ((matchers (ember--matchers-for base-type target-kind))
         (walk-dirs (list (concat (ember--current-project-root) "app")))
         matching-files)
@@ -409,7 +421,7 @@ in said location."
     (remove-if #'ember--temporary-file-p matching-files)))
 
 (defun ember--last-char (string)
-  "Returns the last character of the supplied string."
+  "Returns the last character of STRING."
   (string (elt string (1- (length string)))))
 
 (defun ember--temporary-file-p (filename)
@@ -423,13 +435,17 @@ in said location."
 
 (defun ember--completing-read (question matches)
   "A smarter completing-read which poses QUESTION with matches being MATCHES.
-This replacement uses ido-mode if possible."
+This replacement uses ido-mode if it has been loaded."
   (if (fboundp 'ido-completing-read)
       (ido-completing-read question matches)
     (completing-read question matches)))
 
 (defun ember--select-file-by-type-and-kind (question base-type target-kind)
-  "Opens an ember file based on its kind"
+  "Lets the user select an ember file based on its kind and type.
+
+- QUESTION is the question which will be asked to the user.
+- BASE-TYPE is the type of the resource.
+- TARGET-KIND is the kind of the resource."
   (let ((potential-matches (ember--list-files-by-type-and-kind base-type target-kind)))
     (let ((relative-file (ember--completing-read question potential-matches)))
       (when relative-file
@@ -437,8 +453,8 @@ This replacement uses ido-mode if possible."
 
 (defun ember-generic-open-file (base-class base-type target-kind)
   "Tries to open the ember file specified by BASE-CLASS, BASE-TYPE and TARGET-KIND.
-   If no such file was found, it tries to find related files or requests the user
-   if the file should be created."
+If no such file was found, it tries to find related files or
+requests the user if the file should be created."
   (unless base-class
     (setf base-class ""))
   (let ((ember-root (ember--current-project-root))
@@ -460,34 +476,45 @@ This replacement uses ido-mode if possible."
       (ember--select-file-by-type-and-kind "Not found, alternatives: " base-type target-kind))))
 
 (defun ember-open-component ()
+  "Opens a component file based on the currently opened file."
   (interactive)
   (ember-open-file-by-type "component"))
 
 (defun ember-open-router ()
+  "Opens the Router file based on the currently opened file."
   (interactive)
   (ember-open-file-by-type "router"))
 
 (defun ember-open-controller ()
+  "Opens an ember Controller file based on the currently opened file."
   (interactive)
   (ember-open-file-by-type "controller"))
 
 (defun ember-open-model ()
+  "Opens an ember Model file based on the currently opened file."
   (interactive)
   (ember-open-file-by-type "model"))
 
 (defun ember-open-route ()
+  "Opens an ember Route file based on the currently opened file."
   (interactive)
   (ember-open-file-by-type "route"))
 
 (defun ember-open-template ()
+  "Opens an ember Template file based on the currently opened file."
   (interactive)
   (ember-open-file-by-kind "template"))
 
 (defun ember-open-javascript ()
+  "Opens an ember Javascript file based on the currently opened file.
+
+This may be handy if you are visiting a template and want to open
+the corresponding source."
   (interactive)
   (ember-open-file-by-kind "source"))
 
 (defun ember-open-view ()
+  "Opens an ember View file based on the currently opened file."
   (interactive)
   (ember-open-file-by-type "view"))
 
@@ -537,7 +564,7 @@ This replacement uses ido-mode if possible."
   (ember-generate "template" kind options))
 
 (defun ember--generators ()
-  "Returns a list of all generators"
+  "Returns a list of all generators."
   (split-string
    (shell-command-to-string 
     "ember help generate | grep -P '      (.*)' | grep -P -o '[a-z\\-]+' | sort | uniq")))
@@ -550,15 +577,15 @@ arguments for the generator are known.
 The interative statement will try to find all unknown values from
 `ember--current-file-compononents'.
 
-If a value was supplied to this macro directly, then that value will
-be assumed to be the final value.
+If a value was supplied to this macro directly, then that value
+will be assumed to be the final value.
 
-The user will be queried for all values which weren't supplied and
-which could not be found by `ember--current-file-components' or if the
-user has supplied a prefix-argument.  In the case of a prefix argument
-all values not supplied by SUPPLIED-GENERATOR or SUPPLIED-KIND will be
-queried with the default being the value found by
-`ember--current-file-components'."
+The user will be queried for all values which weren't supplied
+and which could not be found by `ember--current-file-components'
+or if the user has supplied a prefix-argument.  In the case of a
+prefix argument all values not supplied by SUPPLIED-GENERATOR or
+SUPPLIED-KIND will be queried with the default being the value
+found by `ember--current-file-components'."
   (destructuring-bind (current-base-class current-base-kind current-target-kind)
       ;; fetch current values from current-file-components
       (condition-case err 
@@ -611,7 +638,7 @@ queried with the default being the value found by
 (define-key ember-mode-keymap (kbd "C-c c g v") #'ember-generate-view)
 
 (define-minor-mode ember-mode
-  "Mode for navigating around ember applications"
+  "Mode for navigating around ember-cli applications."
   nil " [EM]" ember-mode-keymap
   :global t)
 
