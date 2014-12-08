@@ -637,7 +637,7 @@ found by `ember--current-file-components'."
 (define-key ember-mode-keymap (kbd "C-c c f t") #'ember-open-template)
 (define-key ember-mode-keymap (kbd "C-c c f s") #'ember-open-javascript)
 (define-key ember-mode-keymap (kbd "C-c c f v") #'ember-open-view)
-(define-key ember-mode-keymap (kbd "C-c c f i") #'ember-open-mixin)
+(define-key ember-mode-keymap (kbd "C-c c f x") #'ember-open-mixin)
 
 (define-key ember-mode-keymap (kbd "C-c c g g") #'ember-generate)
 (define-key ember-mode-keymap (kbd "C-c c g p") #'ember-generate-component)
@@ -647,7 +647,7 @@ found by `ember--current-file-components'."
 (define-key ember-mode-keymap (kbd "C-c c g t") #'ember-generate-template)
 (define-key ember-mode-keymap (kbd "C-c c g s") #'ember-generate-javascript)
 (define-key ember-mode-keymap (kbd "C-c c g v") #'ember-generate-view)
-(define-key ember-mode-keymap (kbd "C-c c g i") #'ember-generate-mixin)
+(define-key ember-mode-keymap (kbd "C-c c g x") #'ember-generate-mixin)
 
 (define-minor-mode ember-mode
   "Mode for navigating around ember-cli applications."
