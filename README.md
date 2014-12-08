@@ -79,6 +79,7 @@ Note that pressing `C-c c f r` would have navigated to `routes/friends.coffee` a
     C-c c f x       ember-open-mixin
     C-c c f i       ember-open-initializer
     C-c c f u       ember-open-util
+    C-c c f s       ember-open-service
 
     C-c c g c       ember-generate-controller
     C-c c g m       ember-generate-model
@@ -91,6 +92,7 @@ Note that pressing `C-c c f r` would have navigated to `routes/friends.coffee` a
     C-c c g x       ember-generate-mixin
     C-c c g i       ember-generate-initializer
     C-c c g u       ember-generate-util
+    C-c c g s       ember-generate-service
     C-c c g g       ember-generate
 
 
