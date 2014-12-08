@@ -155,6 +155,7 @@ From the string base, a type can be built.")
    ("component"    "source"      ("app/components/" :class "." :jsext))
    ("controller"   "source"      ("app/controllers/" :class "." :jsext))
    ("mixin"        "source"      ("app/mixins/" :class "." :jsext))
+   ("initializer"  "source"      ("app/initializers/" :class "." :jsext))
    ("component"    "template"    ("app/templates/components/" :class "." :hbext))
    ("template"     ".*"          ("app/templates/" :class "." :hbext))
    (".*"           "template"    ("app/templates/" :class "." :hbext)               "template")
@@ -505,6 +506,11 @@ requests the user if the file should be created."
   (interactive)
   (ember-open-file-by-type "mixin"))
 
+(defun ember-open-initializer ()
+  "Opens an ember Initializer file based on the currently opened file."
+  (interactive)
+  (ember-open-file-by-type "initializer"))
+
 (defun ember-open-template ()
   "Opens an ember Template file based on the currently opened file."
   (interactive)
@@ -567,6 +573,11 @@ the corresponding source."
   "Generates a mixin."
   (interactive (ember--interactive-generator-options "mixin"))
   (ember-generate "mixin" kind options))
+
+(defun ember-generate-initializer (kind options)
+  "Generates a initializer."
+  (interactive (ember--interactive-generator-options "initializer"))
+  (ember-generate "initializer" kind options))
 
 (defun ember-generate-template (kind options)
   "Generates a template."
@@ -638,6 +649,7 @@ found by `ember--current-file-components'."
 (define-key ember-mode-keymap (kbd "C-c c f s") #'ember-open-javascript)
 (define-key ember-mode-keymap (kbd "C-c c f v") #'ember-open-view)
 (define-key ember-mode-keymap (kbd "C-c c f x") #'ember-open-mixin)
+(define-key ember-mode-keymap (kbd "C-c c f i") #'ember-open-initializer)
 
 (define-key ember-mode-keymap (kbd "C-c c g g") #'ember-generate)
 (define-key ember-mode-keymap (kbd "C-c c g p") #'ember-generate-component)
@@ -648,6 +660,7 @@ found by `ember--current-file-components'."
 (define-key ember-mode-keymap (kbd "C-c c g s") #'ember-generate-javascript)
 (define-key ember-mode-keymap (kbd "C-c c g v") #'ember-generate-view)
 (define-key ember-mode-keymap (kbd "C-c c g x") #'ember-generate-mixin)
+(define-key ember-mode-keymap (kbd "C-c c g i") #'ember-generate-initializer)
 
 (define-minor-mode ember-mode
   "Mode for navigating around ember-cli applications."
