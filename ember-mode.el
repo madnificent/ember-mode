@@ -155,7 +155,6 @@ From the string base, a type can be built.")
    ("component"    "source"      ("app/components/" :class "." :jsext))
    ("controller"   "source"      ("app/controllers/" :class "." :jsext))
    ("component"    "template"    ("app/templates/components/" :class "." :hbext))
-   ("index"        ".*"          ("app/templates/" :class "/index" "." :hbext))
    ("template"     ".*"          ("app/templates/" :class "." :hbext))
    (".*"           "template"    ("app/templates/" :class "." :hbext)               "template")
    ;; END contains the definition of each matcher
@@ -293,7 +292,7 @@ Sources are specified in ember by a few orthogonal factors:
       - view
       - component
       - template
-      - index (the index template)
+      - index (the index template) ;; !the index no longer exists
       - (blank)
 - TARGET-KIND :: The target kind is the kind of source file you
     expect to receive.  This is either 'source', 'template', or blank.
