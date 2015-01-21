@@ -696,7 +696,6 @@ found by `ember--current-file-components'."
 
 (define-minor-mode ember-mode
   "Mode for navigating around ember-cli applications."
-  nil " [EM]" ember-mode-keymap
-  :global t)
+  nil " [EM]" ember-mode-keymap)
 
 (provide 'ember-mode)
