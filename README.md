@@ -95,14 +95,9 @@ Note that pressing `C-c c f r` would have navigated to `routes/friends.coffee` a
     C-c c g s       ember-generate-service
     C-c c g g       ember-generate
 
-If you wish to use a different prefix other than `C-c c`, you may add
-this to your configuration:
-
-   (add-hook
-    'ember-mode-hook
-    (lambda ()
-      (define-key ember-mode-keymap (kbd "C-c c") nil)
-      (define-key ember-mode-keymap (kbd "C-c C-c") 'ember-command-prefix)))
+If you wish to use a different prefix other than `C-c c`, you may
+customize the variable `ember-keymap-prefix` with `M-x
+customize-variable`.
 
 
 ## Installation ##

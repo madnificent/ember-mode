@@ -114,6 +114,10 @@ The first item in this list is used as the 'default', used when creating files."
   :type '(repeat string)
   :group 'ember)
 
+(defcustom ember-keymap-prefix (kbd "C-c c")
+  "Ember keymap prefix."
+  :group 'ember
+  :type 'key-sequence)
 
 ;;;;;;;;;;;;;;
 ;;; Navigation
@@ -692,7 +696,7 @@ found by `ember--current-file-components'."
 
 (fset 'ember-command-prefix ember-command-prefix)
 
-(define-key ember-mode-keymap (kbd "C-c c") 'ember-command-prefix)
+(define-key ember-mode-keymap ember-keymap-prefix 'ember-command-prefix)
 
 (define-minor-mode ember-mode
   "Mode for navigating around ember-cli applications."
