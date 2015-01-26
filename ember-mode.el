@@ -119,6 +119,14 @@ The first item in this list is used as the 'default', used when creating files."
   :group 'ember
   :type 'key-sequence)
 
+(defcustom ember-completion-system 'ido
+  "Which completion system ember-mode should use."
+  :group 'ember
+  :type '(radio
+          (const :tag "Ido" ido)
+          (const :tag "Helm" helm)
+          (const :tag "Default" default)))
+
 ;;;;;;;;;;;;;;
 ;;; Navigation
 
@@ -442,10 +450,16 @@ MAXDEPTH is zero or negative."
 
 (defun ember--completing-read (question matches)
   "A smarter completing-read which poses QUESTION with matches being MATCHES.
-This replacement uses ido-mode if it has been loaded."
-  (if (fboundp 'ido-completing-read)
-      (ido-completing-read question matches)
-    (completing-read question matches)))
+This replacement uses a completion system according to
+`ember-completion-system'."
+  (cond
+   ((eq ember-completion-system 'ido)
+    (ido-completing-read question matches))
+   ((and (eq ember-completion-system 'helm)
+         (fboundp 'helm-comp-read))
+    (helm-comp-read question matches
+                    :must-match t))
+   (t (completing-read question matches))))
 
 (defun ember--select-file-by-type-and-kind (question base-type target-kind)
   "Lets the user select an ember file based on its kind and type.
