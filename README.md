@@ -95,6 +95,10 @@ Note that pressing `C-c c f r` would have navigated to `routes/friends.coffee` a
     C-c c g s       ember-generate-service
     C-c c g g       ember-generate
 
+If you wish to use a different prefix other than `C-c c`, you may
+customize the variable `ember-keymap-prefix` with `M-x
+customize-variable`.
+
 
 ## Installation ##
 
@@ -115,3 +119,22 @@ Note that pressing `C-c c f r` would have navigated to `routes/friends.coffee` a
 
         M-x ember-mode
 
+- to enable ember-mode in specific projects, create a `.dir-locals.el`
+  file in your ember project with the following:
+
+        ((nil . ((mode . ember))))
+
+  `.dir-locals.el` can also be useful to set other project-specific
+  variables. You can add a compile-command setting:
+
+        ((nil . ((compile-command . "ember serve")
+                 (mode . ember))))
+
+  and `M-x compile` inside that project will run `ember serve`.
+
+- alternatively, to enable ember-mode for all javascript and handlebar
+  files, assuming you use javascript-mode and web-mode, you would put
+  this in your init file:
+
+        (add-hook 'js-mode-hook (lambda () (ember-mode t)))
+        (add-hook 'web-mode-hook (lambda () (ember-mode t)))

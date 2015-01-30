@@ -114,6 +114,24 @@ The first item in this list is used as the 'default', used when creating files."
   :type '(repeat string)
   :group 'ember)
 
+(defcustom ember-keymap-prefix (kbd "C-c c")
+  "Ember keymap prefix."
+  :group 'ember
+  :type 'key-sequence
+  :set
+  (lambda (option value)
+    (when (boundp 'ember-mode-keymap)
+      (define-key ember-mode-keymap ember-keymap-prefix nil)
+      (define-key ember-mode-keymap value 'ember-command-prefix))
+    (set-default 'ember-keymap-prefix value)))
+
+(defcustom ember-completion-system 'ido
+  "Which completion system ember-mode should use."
+  :group 'ember
+  :type '(radio
+          (const :tag "Ido" ido)
+          (const :tag "Helm" helm)
+          (const :tag "Default" default)))
 
 ;;;;;;;;;;;;;;
 ;;; Navigation
@@ -438,10 +456,16 @@ MAXDEPTH is zero or negative."
 
 (defun ember--completing-read (question matches)
   "A smarter completing-read which poses QUESTION with matches being MATCHES.
-This replacement uses ido-mode if it has been loaded."
-  (if (fboundp 'ido-completing-read)
-      (ido-completing-read question matches)
-    (completing-read question matches)))
+This replacement uses a completion system according to
+`ember-completion-system'."
+  (cond
+   ((eq ember-completion-system 'ido)
+    (ido-completing-read question matches))
+   ((and (eq ember-completion-system 'helm)
+         (fboundp 'helm-comp-read))
+    (helm-comp-read question matches
+                    :must-match t))
+   (t (completing-read question matches))))
 
 (defun ember--select-file-by-type-and-kind (question base-type target-kind)
   "Lets the user select an ember file based on its kind and type.
@@ -659,38 +683,43 @@ found by `ember--current-file-components'."
 ;;;;;;;;;;;;;;;
 ;;; Keybindings
 
+(defvar ember-command-prefix (make-sparse-keymap))
+
 (defvar ember-mode-keymap (make-sparse-keymap)
   "Keymap for ember-mode.")
 
-(define-key ember-mode-keymap (kbd "C-c c f p") #'ember-open-component)
-(define-key ember-mode-keymap (kbd "C-c c f o") #'ember-open-router)
-(define-key ember-mode-keymap (kbd "C-c c f c") #'ember-open-controller)
-(define-key ember-mode-keymap (kbd "C-c c f m") #'ember-open-model)
-(define-key ember-mode-keymap (kbd "C-c c f r") #'ember-open-route)
-(define-key ember-mode-keymap (kbd "C-c c f t") #'ember-open-template)
-(define-key ember-mode-keymap (kbd "C-c c f j") #'ember-open-javascript)
-(define-key ember-mode-keymap (kbd "C-c c f v") #'ember-open-view)
-(define-key ember-mode-keymap (kbd "C-c c f x") #'ember-open-mixin)
-(define-key ember-mode-keymap (kbd "C-c c f i") #'ember-open-initializer)
-(define-key ember-mode-keymap (kbd "C-c c f u") #'ember-open-util)
-(define-key ember-mode-keymap (kbd "C-c c f s") #'ember-open-service)
+(define-key ember-command-prefix (kbd "f p") #'ember-open-component)
+(define-key ember-command-prefix (kbd "f o") #'ember-open-router)
+(define-key ember-command-prefix (kbd "f c") #'ember-open-controller)
+(define-key ember-command-prefix (kbd "f m") #'ember-open-model)
+(define-key ember-command-prefix (kbd "f r") #'ember-open-route)
+(define-key ember-command-prefix (kbd "f t") #'ember-open-template)
+(define-key ember-command-prefix (kbd "f j") #'ember-open-javascript)
+(define-key ember-command-prefix (kbd "f v") #'ember-open-view)
+(define-key ember-command-prefix (kbd "f x") #'ember-open-mixin)
+(define-key ember-command-prefix (kbd "f i") #'ember-open-initializer)
+(define-key ember-command-prefix (kbd "f u") #'ember-open-util)
+(define-key ember-command-prefix (kbd "f s") #'ember-open-service)
 
-(define-key ember-mode-keymap (kbd "C-c c g g") #'ember-generate)
-(define-key ember-mode-keymap (kbd "C-c c g p") #'ember-generate-component)
-(define-key ember-mode-keymap (kbd "C-c c g c") #'ember-generate-controller)
-(define-key ember-mode-keymap (kbd "C-c c g m") #'ember-generate-model)
-(define-key ember-mode-keymap (kbd "C-c c g r") #'ember-generate-route)
-(define-key ember-mode-keymap (kbd "C-c c g t") #'ember-generate-template)
-(define-key ember-mode-keymap (kbd "C-c c g j") #'ember-generate-javascript)
-(define-key ember-mode-keymap (kbd "C-c c g v") #'ember-generate-view)
-(define-key ember-mode-keymap (kbd "C-c c g x") #'ember-generate-mixin)
-(define-key ember-mode-keymap (kbd "C-c c g i") #'ember-generate-initializer)
-(define-key ember-mode-keymap (kbd "C-c c g u") #'ember-generate-util)
-(define-key ember-mode-keymap (kbd "C-c c g s") #'ember-generate-service)
+(define-key ember-command-prefix (kbd "g g") #'ember-generate)
+(define-key ember-command-prefix (kbd "g p") #'ember-generate-component)
+(define-key ember-command-prefix (kbd "g c") #'ember-generate-controller)
+(define-key ember-command-prefix (kbd "g m") #'ember-generate-model)
+(define-key ember-command-prefix (kbd "g r") #'ember-generate-route)
+(define-key ember-command-prefix (kbd "g t") #'ember-generate-template)
+(define-key ember-command-prefix (kbd "g j") #'ember-generate-javascript)
+(define-key ember-command-prefix (kbd "g v") #'ember-generate-view)
+(define-key ember-command-prefix (kbd "g x") #'ember-generate-mixin)
+(define-key ember-command-prefix (kbd "g i") #'ember-generate-initializer)
+(define-key ember-command-prefix (kbd "g u") #'ember-generate-util)
+(define-key ember-command-prefix (kbd "g s") #'ember-generate-service)
+
+(fset 'ember-command-prefix ember-command-prefix)
+
+(define-key ember-mode-keymap ember-keymap-prefix 'ember-command-prefix)
 
 (define-minor-mode ember-mode
   "Mode for navigating around ember-cli applications."
-  nil " [EM]" ember-mode-keymap
-  :global t)
+  nil " [EM]" ember-mode-keymap)
 
 (provide 'ember-mode)
