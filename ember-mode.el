@@ -117,7 +117,13 @@ The first item in this list is used as the 'default', used when creating files."
 (defcustom ember-keymap-prefix (kbd "C-c c")
   "Ember keymap prefix."
   :group 'ember
-  :type 'key-sequence)
+  :type 'key-sequence
+  :set
+  (lambda (option value)
+    (when (boundp 'ember-mode-keymap)
+      (define-key ember-mode-keymap ember-keymap-prefix nil)
+      (define-key ember-mode-keymap value 'ember-command-prefix))
+    (set-default 'ember-keymap-prefix value)))
 
 (defcustom ember-completion-system 'ido
   "Which completion system ember-mode should use."
