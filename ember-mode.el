@@ -630,6 +630,11 @@ the corresponding source."
   (interactive (ember--interactive-generator-options "template"))
   (ember-generate "template" kind options))
 
+(defun ember-generate-view (kind options)
+  "Generates a view."
+  (interactive (ember--interactive-generator-options "view"))
+  (ember-generate "view" kind options))
+
 (defun ember--generators ()
   "Returns a list of all generators."
   (split-string
