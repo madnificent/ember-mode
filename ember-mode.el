@@ -684,6 +684,86 @@ found by `ember--current-file-components'."
           (push new-generator result))
         result))))
 
+;;;;;;;;;;;;;;;
+;;; Ember Serve
+
+(defun ember--resolve-error-filename ()
+  "Resolves a filename that is relative to the app directory"
+  (expand-file-name (match-string 1)
+                    (concat default-directory "app")))
+
+(defun ember--resolve-broken-error-filename ()
+  "Resolves a filename that does not correspond exactly to the real path.
+For example, if you have a project named foo, the paths look like
+/foo/templates/application.hbs when the correct path is
+/foo/app/templates/application.hbs."
+  (let* ((filename (match-string 1))
+         (broken-name (file-name-directory filename))
+         new-filename)
+    (while (and
+            (setq new-filename
+                  (file-name-directory (directory-file-name broken-name)))
+            (not (eq new-filename "/")))
+      (setq broken-name new-filename))
+    (expand-file-name (file-relative-name filename broken-name)
+                      (concat default-directory "app"))))
+
+(defvar ember--error-regexps
+  '((ember-error
+     "File: \\(.+\\)\n.*?[lL]ine \\([0-9]+\\).*"
+     ember--resolve-broken-error-filename 2 nil 2 nil (1 compilation-error-face))
+    (ember-jshint
+     "\\([^, \n]+\\): line \\([0-9]+\\), col \\([0-9]+\\), .*"
+     ember--resolve-error-filename 2 3 1 nil (1 compilation-warning-face))
+    (ember-babel
+     "\\(?:SyntaxError: \\)?\\([^, \n]+\\): [^(\n]+ (\\([0-9]+\\):\\([0-9]+\\))"
+     ember--resolve-broken-error-filename 2 3 2 nil (1 compilation-error-face))))
+
+(defun ember--load-error-regexps ()
+  (make-local-variable 'compilation-error-regexp-alist-alist)
+  (make-local-variable 'compilation-error-regexp-alist)
+  (dolist
+      (regexp ember--error-regexps)
+    (add-to-list 'compilation-error-regexp-alist-alist regexp)
+    (add-to-list 'compilation-error-regexp-alist (car regexp))))
+
+(defvar ember--serve-history nil)
+
+(defun ember-serve-or-display (command)
+  "Run ember serve, or switch to buffer if already running."
+  (interactive "i")
+  (let* ((buffer-name "*ember-serve*")
+         (buffer (get-buffer buffer-name)))
+    (if (and buffer
+             (get-buffer-process buffer))
+        (display-buffer buffer-name)
+      (let ((command (or command
+                         (read-shell-command "Serve command: "
+                                             "ember serve"
+                                             ember--serve-history)))
+            (default-directory (ember--current-project-root)))
+        (compilation-start command 'ember-serve-mode)))))
+
+(define-derived-mode ember-serve-mode compilation-mode "Serving"
+  "Mode for running ember serve."
+  (ember--load-error-regexps)
+  (add-hook 'compilation-filter-hook
+            (lambda ()
+              (unless (get-buffer-window "*ember-serve*" 'visible)
+                (save-match-data
+                  (save-excursion
+                    (let ((end (point)))
+                      (dolist (regexp (mapcar 'cadr ember--error-regexps))
+                        (goto-char compilation-filter-start)
+                        (when (re-search-forward regexp end t)
+                          (message "Ember serve: %s" (match-string 0)))))))))
+            nil
+            t)
+  (set (make-local-variable 'compilation-scroll-output) t)
+  (set (make-local-variable 'compilation-finish-functions)
+       (lambda (buffer result)
+         (unless (get-buffer-window "*ember-serve*" 'visible)
+           (message "Ember serve exited: %s" result)))))
 
 ;;;;;;;;;;;;;;;
 ;;; Keybindings
@@ -718,6 +798,8 @@ found by `ember--current-file-components'."
 (define-key ember-command-prefix (kbd "g i") #'ember-generate-initializer)
 (define-key ember-command-prefix (kbd "g u") #'ember-generate-util)
 (define-key ember-command-prefix (kbd "g s") #'ember-generate-service)
+
+(define-key ember-command-prefix (kbd "s") 'ember-serve-or-display)
 
 (fset 'ember-command-prefix ember-command-prefix)
 
