@@ -687,6 +687,12 @@ found by `ember--current-file-components'."
 ;;;;;;;;;;;;;;;
 ;;; Ember Serve
 
+(defcustom ember-serve-command
+  "ember serve"
+  "Default command for running ember serve with `ember-serve-or-display'."
+  :type 'string
+  :group 'ember)
+
 (defun ember--resolve-error-filename ()
   "Resolves a filename that is relative to the app directory"
   (expand-file-name (match-string 1)
@@ -739,7 +745,7 @@ For example, if you have a project named foo, the paths look like
         (display-buffer buffer-name)
       (let ((command (or command
                          (read-shell-command "Serve command: "
-                                             "ember serve"
+                                             ember-serve-command
                                              ember--serve-history)))
             (default-directory (ember--current-project-root)))
         (compilation-start command 'ember-serve-mode)))))
@@ -753,7 +759,11 @@ For example, if you have a project named foo, the paths look like
                 (save-match-data
                   (save-excursion
                     (let ((end (point)))
-                      (dolist (regexp (mapcar 'cadr ember--error-regexps))
+                      (dolist (regexp (append
+                                       '("^file changed .+"
+                                         "^Build successful .+"
+                                         "^Error: .+")
+                                       (mapcar 'cadr ember--error-regexps)))
                         (goto-char compilation-filter-start)
                         (when (re-search-forward regexp end t)
                           (message "Ember serve: %s" (match-string 0)))))))))
@@ -761,9 +771,10 @@ For example, if you have a project named foo, the paths look like
             t)
   (set (make-local-variable 'compilation-scroll-output) t)
   (set (make-local-variable 'compilation-finish-functions)
-       (lambda (buffer result)
-         (unless (get-buffer-window "*ember-serve*" 'visible)
-           (message "Ember serve exited: %s" result)))))
+       (list
+        (lambda (buffer result)
+          (unless (get-buffer-window "*ember-serve*" 'visible)
+            (message "Ember serve exited: %s" result))))))
 
 ;;;;;;;;;;;;;;;
 ;;; Keybindings
