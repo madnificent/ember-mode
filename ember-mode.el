@@ -693,6 +693,12 @@ found by `ember--current-file-components'."
   :type 'string
   :group 'ember)
 
+(defcustom ember-build-command
+  "ember build"
+  "Default command for running ember build with `ember-build'."
+  :type 'string
+  :group 'ember)
+
 (defun ember--resolve-error-filename ()
   "Resolves a filename that is relative to the app directory"
   (expand-file-name (match-string 1)
@@ -734,6 +740,7 @@ For example, if you have a project named foo, the paths look like
     (add-to-list 'compilation-error-regexp-alist (car regexp))))
 
 (defvar ember--serve-history nil)
+(defvar ember--build-history nil)
 
 (defun ember-serve-or-display (command)
   "Run ember serve, or switch to buffer if already running."
@@ -775,6 +782,17 @@ For example, if you have a project named foo, the paths look like
                  (unless (get-buffer-window "*ember-serve*" 'visible)
                    (message "Ember serve exited: %s" result)))))
 
+(defun ember-build (command)
+  (interactive (list
+                (read-shell-command "Build command: "
+                                    ember-build-command
+                                    ember--build-history)))
+  (compilation-start command 'ember-build-mode))
+
+(define-derived-mode ember-build-mode compilation-mode "Serving"
+  "Mode for running ember serve."
+  (ember--load-error-regexps))
+
 ;;;;;;;;;;;;;;;
 ;;; Keybindings
 
@@ -809,6 +827,7 @@ For example, if you have a project named foo, the paths look like
 (define-key ember-command-prefix (kbd "g u") #'ember-generate-util)
 (define-key ember-command-prefix (kbd "g s") #'ember-generate-service)
 
+(define-key ember-command-prefix (kbd "b") 'ember-build)
 (define-key ember-command-prefix (kbd "s") 'ember-serve-or-display)
 
 (fset 'ember-command-prefix ember-command-prefix)
