@@ -770,11 +770,10 @@ For example, if you have a project named foo, the paths look like
             nil
             t)
   (set (make-local-variable 'compilation-scroll-output) t)
-  (set (make-local-variable 'compilation-finish-functions)
-       (list
-        (lambda (buffer result)
-          (unless (get-buffer-window "*ember-serve*" 'visible)
-            (message "Ember serve exited: %s" result))))))
+  (add-to-list (make-local-variable 'compilation-finish-functions)
+               (lambda (buffer result)
+                 (unless (get-buffer-window "*ember-serve*" 'visible)
+                   (message "Ember serve exited: %s" result)))))
 
 ;;;;;;;;;;;;;;;
 ;;; Keybindings
