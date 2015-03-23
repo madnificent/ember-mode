@@ -694,7 +694,7 @@ found by `ember--current-file-components'."
   :group 'ember)
 
 (defcustom ember-build-command
-  "ember build"
+  "ember build --environment=production"
   "Default command for running ember build with `ember-build'."
   :type 'string
   :group 'ember)
