@@ -822,7 +822,7 @@ For example, if you have a project named foo, the paths look like
                                     ember-test-command
                                     ember--test-history)))
   (let ((default-directory (ember--current-project-root)))
-    (compilation-start ember-test-command 'ember-test-mode)))
+    (compilation-start command 'ember-test-mode)))
 
 (define-derived-mode ember-test-mode compilation-mode "Testing"
   "Mode for running ember test."
