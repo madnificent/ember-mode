@@ -684,8 +684,8 @@ found by `ember--current-file-components'."
           (push new-generator result))
         result))))
 
-;;;;;;;;;;;;;;;
-;;; Ember Serve
+;;;;;;;;;;;;;;;;;;;;;
+;;; Compilation modes
 
 (defcustom ember-serve-command
   "ember serve"
@@ -698,6 +698,42 @@ found by `ember--current-file-components'."
   "Default command for running ember build with `ember-build'."
   :type 'string
   :group 'ember)
+
+(defcustom ember-test-command
+  "ember test"
+  "Default command for running ember test with `ember-test'."
+  :type 'string
+  :group 'ember)
+
+(defvar ember--serve-history nil)
+(defvar ember--build-history nil)
+(defvar ember--test-history nil)
+
+(defvar ember--test-regexps
+  '((ember-test-ok
+     "^\\(ok\\)" nil nil nil 0 nil
+     (1 compilation-info-face))
+    (ember-test-notok
+     "^\\(not ok\\)" nil nil nil 2 nil
+     (1 compilation-error-face))))
+
+(defvar ember--error-regexps
+  '((ember-error
+     "File: \\(.+\\)\n.*?[lL]ine \\([0-9]+\\).*"
+     ember--resolve-broken-error-filename 2 nil 2 nil
+     (1 compilation-error-face))
+    (ember-error-2
+     "File: \\(.+\\)\n.* \\([0-9]+\\):\\([0-9]+\\)"
+     ember--resolve-broken-error-filename 2 3 2 nil
+     (1 compilation-error-face))
+    (ember-jshint
+     "\\([^, \n]+\\): line \\([0-9]+\\), col \\([0-9]+\\), .*"
+     ember--resolve-error-filename 2 3 1 nil
+     (1 compilation-warning-face))
+    (ember-babel
+     "\\(?:SyntaxError: \\)?\\([^, \n]+\\): [^(\n]+ (\\([0-9]+\\):\\([0-9]+\\))"
+     ember--resolve-broken-error-filename 2 3 2 nil
+     (1 compilation-error-face))))
 
 (defun ember--resolve-error-filename ()
   "Resolves a filename that is relative to the app directory"
@@ -720,27 +756,13 @@ For example, if you have a project named foo, the paths look like
     (expand-file-name (file-relative-name filename broken-name)
                       (concat default-directory "app"))))
 
-(defvar ember--error-regexps
-  '((ember-error
-     "File: \\(.+\\)\n.*?[lL]ine \\([0-9]+\\).*"
-     ember--resolve-broken-error-filename 2 nil 2 nil (1 compilation-error-face))
-    (ember-jshint
-     "\\([^, \n]+\\): line \\([0-9]+\\), col \\([0-9]+\\), .*"
-     ember--resolve-error-filename 2 3 1 nil (1 compilation-warning-face))
-    (ember-babel
-     "\\(?:SyntaxError: \\)?\\([^, \n]+\\): [^(\n]+ (\\([0-9]+\\):\\([0-9]+\\))"
-     ember--resolve-broken-error-filename 2 3 2 nil (1 compilation-error-face))))
-
-(defun ember--load-error-regexps ()
+(defun ember--load-error-regexps (regexps)
   (make-local-variable 'compilation-error-regexp-alist-alist)
   (make-local-variable 'compilation-error-regexp-alist)
   (dolist
-      (regexp ember--error-regexps)
+      (regexp regexps)
     (add-to-list 'compilation-error-regexp-alist-alist regexp)
     (add-to-list 'compilation-error-regexp-alist (car regexp))))
-
-(defvar ember--serve-history nil)
-(defvar ember--build-history nil)
 
 (defun ember-serve-or-display (command)
   "Run ember serve, or switch to buffer if already running."
@@ -759,7 +781,7 @@ For example, if you have a project named foo, the paths look like
 
 (define-derived-mode ember-serve-mode compilation-mode "Serving"
   "Mode for running ember serve."
-  (ember--load-error-regexps)
+  (ember--load-error-regexps ember--error-regexps)
   (add-hook 'compilation-filter-hook
             (lambda ()
               (unless (get-buffer-window "*ember-serve*" 'visible)
@@ -787,11 +809,24 @@ For example, if you have a project named foo, the paths look like
                 (read-shell-command "Build command: "
                                     ember-build-command
                                     ember--build-history)))
-  (compilation-start command 'ember-build-mode))
+  (let ((default-directory (ember--current-project-root)))
+    (compilation-start command 'ember-build-mode)))
 
-(define-derived-mode ember-build-mode compilation-mode "Serving"
-  "Mode for running ember serve."
-  (ember--load-error-regexps))
+(define-derived-mode ember-build-mode compilation-mode "Building"
+  "Mode for running ember build."
+  (ember--load-error-regexps ember--error-regexps))
+
+(defun ember-test (command)
+  (interactive (list
+                (read-shell-command "Test command: "
+                                    ember-test-command
+                                    ember--test-history)))
+  (let ((default-directory (ember--current-project-root)))
+    (compilation-start ember-test-command 'ember-test-mode)))
+
+(define-derived-mode ember-test-mode compilation-mode "Testing"
+  "Mode for running ember test."
+  (ember--load-error-regexps (append ember--error-regexps ember--test-regexps)))
 
 ;;;;;;;;;;;;;;;
 ;;; Keybindings
@@ -829,6 +864,7 @@ For example, if you have a project named foo, the paths look like
 
 (define-key ember-command-prefix (kbd "b") 'ember-build)
 (define-key ember-command-prefix (kbd "s") 'ember-serve-or-display)
+(define-key ember-command-prefix (kbd "t") 'ember-test)
 
 (fset 'ember-command-prefix ember-command-prefix)
 
