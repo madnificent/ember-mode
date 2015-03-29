@@ -64,7 +64,15 @@ Note that pressing `C-c c f r` would have navigated to `routes/friends.coffee` a
 
     cd path/to/your/ember-cli-project
     npm install ember-cli-coffeescript --save-dev
-    
+
+### building, serving, testing ###
+
+`ember build` and `ember test` can be run with `C-c c b` and `C-c c t`
+respectively, and `C-c c s` will either run `ember serve`, or bring up
+the serve buffer if already running. These commands use compilation
+mode to link errors to files with line and column numbers. If the
+buffer that `ember serve` runs in is buried, it will also notify of
+build status via minibuffer messages.
 
 ### published bindings ###
 
@@ -95,6 +103,10 @@ Note that pressing `C-c c f r` would have navigated to `routes/friends.coffee` a
     C-c c g s       ember-generate-service
     C-c c g g       ember-generate
 
+    C-c c b         ember-build
+    C-c c s         ember-serve-or-display
+    C-c c t         ember-test
+
 If you wish to use a different prefix other than `C-c c`, you may
 customize the variable `ember-keymap-prefix` with `M-x
 customize-variable`.
@@ -123,14 +135,6 @@ customize-variable`.
   file in your ember project with the following:
 
         ((nil . ((mode . ember))))
-
-  `.dir-locals.el` can also be useful to set other project-specific
-  variables. You can add a compile-command setting:
-
-        ((nil . ((compile-command . "ember serve")
-                 (mode . ember))))
-
-  and `M-x compile` inside that project will run `ember serve`.
 
 - alternatively, to enable ember-mode for all javascript and handlebar
   files, assuming you use javascript-mode and web-mode, you would put

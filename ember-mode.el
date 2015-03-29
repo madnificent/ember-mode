@@ -684,6 +684,149 @@ found by `ember--current-file-components'."
           (push new-generator result))
         result))))
 
+;;;;;;;;;;;;;;;;;;;;;
+;;; Compilation modes
+
+(defcustom ember-serve-command
+  "ember serve"
+  "Default command for running ember serve with `ember-serve-or-display'."
+  :type 'string
+  :group 'ember)
+
+(defcustom ember-build-command
+  "ember build --environment=production"
+  "Default command for running ember build with `ember-build'."
+  :type 'string
+  :group 'ember)
+
+(defcustom ember-test-command
+  "ember test"
+  "Default command for running ember test with `ember-test'."
+  :type 'string
+  :group 'ember)
+
+(defvar ember--serve-history nil)
+(defvar ember--build-history nil)
+(defvar ember--test-history nil)
+
+(defvar ember--test-regexps
+  '((ember-test-ok
+     "^\\(ok\\)" nil nil nil 0 nil
+     (1 compilation-info-face))
+    (ember-test-notok
+     "^\\(not ok\\)" nil nil nil 2 nil
+     (1 compilation-error-face))))
+
+(defvar ember--error-regexps
+  '((ember-error
+     "File: \\(.+\\)\n.*?[lL]ine \\([0-9]+\\).*"
+     ember--resolve-broken-error-filename 2 nil 2 nil
+     (1 compilation-error-face))
+    (ember-error-2
+     "File: \\(.+\\)\n.* \\([0-9]+\\):\\([0-9]+\\)"
+     ember--resolve-broken-error-filename 2 3 2 nil
+     (1 compilation-error-face))
+    (ember-jshint
+     "\\([^, \n]+\\): line \\([0-9]+\\), col \\([0-9]+\\), .*"
+     ember--resolve-error-filename 2 3 1 nil
+     (1 compilation-warning-face))
+    (ember-babel
+     "\\(?:SyntaxError: \\)?\\([^, \n]+\\): [^(\n]+ (\\([0-9]+\\):\\([0-9]+\\))"
+     ember--resolve-broken-error-filename 2 3 2 nil
+     (1 compilation-error-face))))
+
+(defun ember--resolve-error-filename ()
+  "Resolves a filename that is relative to the app directory"
+  (expand-file-name (match-string 1)
+                    (concat default-directory "app")))
+
+(defun ember--resolve-broken-error-filename ()
+  "Resolves a filename that does not correspond exactly to the real path.
+For example, if you have a project named foo, the paths look like
+/foo/templates/application.hbs when the correct path is
+/foo/app/templates/application.hbs."
+  (let* ((filename (match-string 1))
+         (broken-name (file-name-directory filename))
+         new-filename)
+    (while (and
+            (setq new-filename
+                  (file-name-directory (directory-file-name broken-name)))
+            (not (eq new-filename "/")))
+      (setq broken-name new-filename))
+    (expand-file-name (file-relative-name filename broken-name)
+                      (concat default-directory "app"))))
+
+(defun ember--load-error-regexps (regexps)
+  (make-local-variable 'compilation-error-regexp-alist-alist)
+  (make-local-variable 'compilation-error-regexp-alist)
+  (dolist
+      (regexp regexps)
+    (add-to-list 'compilation-error-regexp-alist-alist regexp)
+    (add-to-list 'compilation-error-regexp-alist (car regexp))))
+
+(defun ember-serve-or-display (command)
+  "Run ember serve, or switch to buffer if already running."
+  (interactive "i")
+  (let* ((buffer-name "*ember-serve*")
+         (buffer (get-buffer buffer-name)))
+    (if (and buffer
+             (get-buffer-process buffer))
+        (display-buffer buffer-name)
+      (let ((command (or command
+                         (read-shell-command "Serve command: "
+                                             ember-serve-command
+                                             'ember--serve-history)))
+            (default-directory (ember--current-project-root)))
+        (compilation-start command 'ember-serve-mode)))))
+
+(define-derived-mode ember-serve-mode compilation-mode "Serving"
+  "Mode for running ember serve."
+  (ember--load-error-regexps ember--error-regexps)
+  (add-hook 'compilation-filter-hook
+            (lambda ()
+              (unless (get-buffer-window "*ember-serve*" 'visible)
+                (save-match-data
+                  (save-excursion
+                    (let ((end (point)))
+                      (dolist (regexp (append
+                                       '("^file changed .+"
+                                         "^Build successful .+"
+                                         "^Error: .+")
+                                       (mapcar 'cadr ember--error-regexps)))
+                        (goto-char compilation-filter-start)
+                        (when (re-search-forward regexp end t)
+                          (message "Ember serve: %s" (match-string 0)))))))))
+            nil
+            t)
+  (set (make-local-variable 'compilation-scroll-output) t)
+  (add-to-list (make-local-variable 'compilation-finish-functions)
+               (lambda (buffer result)
+                 (unless (get-buffer-window "*ember-serve*" 'visible)
+                   (message "Ember serve exited: %s" result)))))
+
+(defun ember-build (command)
+  (interactive (list
+                (read-shell-command "Build command: "
+                                    ember-build-command
+                                    'ember--build-history)))
+  (let ((default-directory (ember--current-project-root)))
+    (compilation-start command 'ember-build-mode)))
+
+(define-derived-mode ember-build-mode compilation-mode "Building"
+  "Mode for running ember build."
+  (ember--load-error-regexps ember--error-regexps))
+
+(defun ember-test (command)
+  (interactive (list
+                (read-shell-command "Test command: "
+                                    ember-test-command
+                                    'ember--test-history)))
+  (let ((default-directory (ember--current-project-root)))
+    (compilation-start command 'ember-test-mode)))
+
+(define-derived-mode ember-test-mode compilation-mode "Testing"
+  "Mode for running ember test."
+  (ember--load-error-regexps (append ember--error-regexps ember--test-regexps)))
 
 ;;;;;;;;;;;;;;;
 ;;; Keybindings
@@ -718,6 +861,10 @@ found by `ember--current-file-components'."
 (define-key ember-command-prefix (kbd "g i") #'ember-generate-initializer)
 (define-key ember-command-prefix (kbd "g u") #'ember-generate-util)
 (define-key ember-command-prefix (kbd "g s") #'ember-generate-service)
+
+(define-key ember-command-prefix (kbd "b") 'ember-build)
+(define-key ember-command-prefix (kbd "s") 'ember-serve-or-display)
+(define-key ember-command-prefix (kbd "t") 'ember-test)
 
 (fset 'ember-command-prefix ember-command-prefix)
 
