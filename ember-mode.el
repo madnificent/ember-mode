@@ -775,7 +775,7 @@ For example, if you have a project named foo, the paths look like
       (let ((command (or command
                          (read-shell-command "Serve command: "
                                              ember-serve-command
-                                             ember--serve-history)))
+                                             'ember--serve-history)))
             (default-directory (ember--current-project-root)))
         (compilation-start command 'ember-serve-mode)))))
 
@@ -808,7 +808,7 @@ For example, if you have a project named foo, the paths look like
   (interactive (list
                 (read-shell-command "Build command: "
                                     ember-build-command
-                                    ember--build-history)))
+                                    'ember--build-history)))
   (let ((default-directory (ember--current-project-root)))
     (compilation-start command 'ember-build-mode)))
 
@@ -820,7 +820,7 @@ For example, if you have a project named foo, the paths look like
   (interactive (list
                 (read-shell-command "Test command: "
                                     ember-test-command
-                                    ember--test-history)))
+                                    'ember--test-history)))
   (let ((default-directory (ember--current-project-root)))
     (compilation-start command 'ember-test-mode)))
 
