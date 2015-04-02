@@ -60,8 +60,7 @@
 ;; License: MIT
 
 ;;; Code:
-(require 'cl)
-
+(require 'cl-lib)
 
 (defgroup ember nil
   "Ember-mode customizations."
@@ -83,8 +82,8 @@
 (defun ember--pluralize-noun (noun)
   "Pluralizes NOUN."
   (save-match-data
-    (cond ((find noun ember-pluralization-irregular-nouns :key #'car :test #'string=)
-           (cdr (find noun ember-pluralization-irregular-nouns :key #'car :test #'string=)))
+    (cond ((cl-find noun ember-pluralization-irregular-nouns :key #'car :test #'string=)
+           (cdr (cl-find noun ember-pluralization-irregular-nouns :key #'car :test #'string=)))
           ((string-match-p "[yo]$" noun)
            (message "Don't know how to translate %s" noun)
            noun)
@@ -98,8 +97,8 @@
 (defun ember--singularize-noun (noun)
   "Singularizes NOUN."
   (save-match-data
-    (cond ((find noun ember-pluralization-irregular-nouns :key #'cdr :test #'string=)
-           (car (find noun ember-pluralization-irregular-nouns :key #'cdr :test #'string=)))
+    (cond ((cl-find noun ember-pluralization-irregular-nouns :key #'cdr :test #'string=)
+           (car (cl-find noun ember-pluralization-irregular-nouns :key #'cdr :test #'string=)))
           ((string-match "^\\(.*ch\\)es$" noun)
            (match-string 1 noun))
           ((string-match "^\\(.*[xs]\\)es$" noun)
@@ -173,10 +172,10 @@ From the string base, a type can be built.")
                 (list (list base-type-regex target-kind base-location base-type)))))
 
 (defmacro ember--define-matchers (&rest matchers)
-  `(progn ,@(loop for matcher in matchers collect
+  `(progn ,@(cl-loop for matcher in matchers collect
                   `(ember--define-matcher ,(car matcher) ,(cadr matcher)
-                                          (list ,@(caddr matcher))
-                                          ,@(cdddr matcher)))))
+                                          (list ,@(cl-caddr matcher))
+                                          ,@(cl-cdddr matcher)))))
 
 (ember--define-matchers
    ;; BEGIN contains the definition for each matcher
@@ -204,8 +203,8 @@ with the supplied OPTIONS.
 
 OPTIONS is expected to be a plist containing the keywords
 :extension and :class if they are available."
-  (loop for item in matcher-template
-        for substitution = (getf options item)
+  (cl-loop for item in matcher-template
+        for substitution = (cl-getf options item)
         if substitution
         collect substitution
         else
@@ -218,14 +217,14 @@ options in OPTIONS.
 OPTIONS should be an alist containing the keywords :CLASS and
 :EXTENSION.  Some matchers may not require both to be supplied."
   (apply #'concat
-         (loop for item in
+         (cl-loop for item in
                (apply #'ember--matcher-partial-fill matcher-template options)
                if (stringp item) collect item
                else collect "")))
 
 (defun ember--matcher-matches-p (matcher base-type target-kind)
   "Returns non-nil iff MATCHER matches BASE-TYPE and TARGET-KIND."
-  (destructuring-bind (base-type-regexp target-kind-regexp)
+  (cl-destructuring-bind (base-type-regexp target-kind-regexp)
       matcher
     (and (string-match base-type-regexp base-type)
          (string-match target-kind-regexp target-kind))))
@@ -234,7 +233,7 @@ OPTIONS should be an alist containing the keywords :CLASS and
   "Returns the matcher templates which match BASE-TYPE and
 TARGET-KIND in the order in which the matchers have been
 defined."
-  (loop for (base-type-regexp target-kind-regexp matcher-template) in *ember--matcher-templates*
+  (cl-loop for (base-type-regexp target-kind-regexp matcher-template) in *ember--matcher-templates*
         if (and (string-match base-type-regexp (or base-type ""))
                 (string-match target-kind-regexp (or target-kind "")))
         collect matcher-template))
@@ -242,7 +241,7 @@ defined."
 (defun ember--matchers-for (base-type target-kind)
   "Similar to ember--matcher-templates-for, but returning the the
 whole matcher"
-  (loop for matcher in *ember--matcher-templates*
+  (cl-loop for matcher in *ember--matcher-templates*
         for (base-type-regexp target-kind-regexp matcher-template) = matcher
         if (and (string-match base-type-regexp (or base-type ""))
                 (string-match target-kind-regexp (or target-kind "")))
@@ -250,20 +249,20 @@ whole matcher"
 
 (defun ember--matcher-hbs-template-p (matcher-template)
   "Returns non-nil iff the matcher-template has a handlebars-extension"
-  (find :hbext matcher-template))
+  (cl-find :hbext matcher-template))
 
 (defun ember--matcher-js-template-p (matcher-template)
   "Returns non-nil iff the matcher-template has a javascript-extension"
-  (find :jsext matcher-template))
+  (cl-find :jsext matcher-template))
 
 (defun ember--matcher-template-map-extensions (matcher-template)
   "Returns a new matcher-template for each of the file-types which fit
 the matcher-template"
   (cond ((ember--matcher-js-template-p matcher-template)
-         (loop for ext in ember-script-file-types collect
+         (cl-loop for ext in ember-script-file-types collect
                (ember--matcher-partial-fill matcher-template :jsext ext)))
         ((ember--matcher-hbs-template-p matcher-template)
-         (loop for ext in ember-template-file-types collect
+         (cl-loop for ext in ember-template-file-types collect
                (ember--matcher-partial-fill matcher-template :hbext ext)))
         (t (list matcher-template))))
 
@@ -272,9 +271,9 @@ the matcher-template"
 a regular expression.  The most common regex patterns will have been
 replaced."
   (let ((symbols-to-replace (list "." "+" "*")))
-    (loop for char in symbols-to-replace
+    (cl-loop for char in symbols-to-replace
           do (setf matcher-template
-                   (loop for component in matcher-template
+                   (cl-loop for component in matcher-template
                          if (stringp component)
                          collect (replace-regexp-in-string (concat "\\" char)
                                                            (concat "\\\\" char)
@@ -288,17 +287,17 @@ replaced."
 If this returns non-nil, a PLIST is returned which maps the variables in the
 template to their corresponding values in RELATIVE-PATH."
   (let ((matcher-template (ember--get-matcher-template matcher)))
-    (let ((component-symbols (loop for component in matcher-template
+    (let ((component-symbols (cl-loop for component in matcher-template
                                    if (symbolp component)
                                    collect component)))
       (let ((template-regex
              (apply #'ember--matcher-relative-path
                     (ember--regex-escape-matcher-template matcher-template)
-                    (loop for symbol in component-symbols append
+                    (cl-loop for symbol in component-symbols append
                           (list symbol "\\(.+\\)")))))
         (save-match-data
           (when (string-match template-regex relative-path)
-            (loop for component-symbol in component-symbols
+            (cl-loop for component-symbol in component-symbols
                   for index from 1
                   append
                   (list component-symbol (match-string index relative-path)))))))))
@@ -370,18 +369,18 @@ The components are defined in `ember--relative-ember-source-path'.  This functio
 returns the base-class, the base-type and the target-kind of the current
 file."
   (let ((components-and-matcher
-         (loop for matcher in *ember--matcher-templates*
+         (cl-loop for matcher in *ember--matcher-templates*
                for components = (ember--matcher-matches-file-p matcher file)
                if components
                return (list components matcher))))
     (when components-and-matcher
-      (destructuring-bind (components matcher) components-and-matcher
-        (let ((base-class (getf components :class))
+      (cl-destructuring-bind (components matcher) components-and-matcher
+        (let ((base-class (cl-getf components :class))
               (base-type  (fourth matcher))
               (target-kind (cond
-                            ((find (getf components :jsext) ember-script-file-types :test #'equal)
+                            ((cl-find (cl-getf components :jsext) ember-script-file-types :test #'equal)
                              "source")
-                            ((find (getf components :hbext) ember-template-file-types :test #'equal)
+                            ((cl-find (cl-getf components :hbext) ember-template-file-types :test #'equal)
                              "template"))))
           (list base-class base-type target-kind))))))
 
@@ -403,7 +402,7 @@ the currently open file.
 
 ASSUME-JS is an override.  If this is true, it is assumed that a
 javascript (or coffeescript) source file should be opened."
-  (destructuring-bind (base-class base-type target-kind)
+  (cl-destructuring-bind (base-class base-type target-kind)
       (ember--current-file-components)
     (let ((new-target-kind (if assume-js "source" target-kind)))
       (if (and (equal type base-type)
@@ -415,7 +414,7 @@ javascript (or coffeescript) source file should be opened."
   "Opens an ember file for KIND.
 
 Kind should be one of \"template\" or \"source\"."
-  (destructuring-bind (base-class base-type target-kind)
+  (cl-destructuring-bind (base-class base-type target-kind)
       (ember--current-file-components)
     (if (equal kind target-kind)
         (ember--select-file-by-type-and-kind (concat "Open " base-type ": ") base-type kind)
@@ -445,7 +444,7 @@ MAXDEPTH is zero or negative."
                (dolist (f (directory-files dir t "[A-Za-z]"))
                  (cond ((file-regular-p f)
                         (let ((relative-file (ember--file-relative-to-root f)))
-                          (when (some (lambda (m) (ember--matcher-matches-file-p m relative-file)) matchers)
+                          (when (cl-some (lambda (m) (ember--matcher-matches-file-p m relative-file)) matchers)
                             (push f matching-files))))
                        ((file-directory-p f)
                         (push f walk-dirs))))))
@@ -455,7 +454,7 @@ MAXDEPTH is zero or negative."
           (dolist (dir walk-now)
             (walk-directory dir)))))
     (setf matching-files (mapcar #'ember--file-relative-to-root matching-files))
-    (remove-if #'ember--temporary-file-p matching-files)))
+    (cl-remove-if #'ember--temporary-file-p matching-files)))
 
 (defun ember--last-char (string)
   "Returns the last character of STRING."
@@ -508,7 +507,7 @@ requests the user if the file should be created."
                  (ember--relative-ember-source-path (ember--pluralize-noun base-class) base-type target-kind)
                  (ember--relative-ember-source-path (ember--singularize-noun base-class) base-type target-kind))))
     (block found-file
-      (loop for relative-file in file-list
+      (cl-loop for relative-file in file-list
             for absolute-file = (concat ember-root relative-file)
             if (file-exists-p absolute-file)
             do
@@ -674,13 +673,13 @@ or if the user has supplied a prefix-argument.  In the case of a
 prefix argument all values not supplied by SUPPLIED-GENERATOR or
 SUPPLIED-KIND will be queried with the default being the value
 found by `ember--current-file-components'."
-  (destructuring-bind (current-base-class current-base-kind current-target-kind)
+  (cl-destructuring-bind (current-base-class current-base-kind current-target-kind)
       ;; fetch current values from current-file-components
       (condition-case err
           (ember--current-file-components)
         ('error (list nil nil nil)))
     ;; ask the user to override
-    (destructuring-bind (new-generator new-kind new-options)
+    (cl-destructuring-bind (new-generator new-kind new-options)
         (if current-prefix-arg
             (let* ((generator (or supplied-generator current-base-kind
                                   (ember--completing-read "Generator: " (ember--generators))))
