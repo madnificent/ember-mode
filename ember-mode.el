@@ -65,7 +65,8 @@
 
 (defgroup ember nil
   "Ember-mode customizations."
-  :prefix "ember-")
+  :prefix "ember-"
+  :group 'tools)
 
 ;;;;;;;;;;;;
 ;;;; plurals
