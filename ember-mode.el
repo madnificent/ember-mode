@@ -1,6 +1,7 @@
 ;;; ember-mode.el --- Ember navigation mode for emacs
 
-;; This is a proof of concept for ember-mode.  ember-mode helps you 
+;;; Commentary:
+;; This is a proof of concept for ember-mode.  ember-mode helps you
 ;; navigate through the files in your emberjs project.  A bunch of
 ;; bindings have been created to quickly jump to the relevant sources
 ;; given that you're visiting a recognised file (*) in the ember project.
@@ -29,11 +30,25 @@
 
 ;; Copyright (C) 2014 Aad Versteden
 ;;
-;; Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+;; Permission is hereby granted, free of charge, to any person
+;; obtaining a copy of this software and associated documentation
+;; files (the "Software"), to deal in the Software without
+;; restriction, including without limitation the rights to use, copy,
+;; modify, merge, publish, distribute, sublicense, and/or sell copies
+;; of the Software, and to permit persons to whom the Software is
+;; furnished to do so, subject to the following conditions:
 ;;
-;; The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+;; The above copyright notice and this permission notice shall be
+;; included in all copies or substantial portions of the Software.
 ;;
-;; THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+;; THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+;; EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+;; MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+;; NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+;; BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+;; ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+;; CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+;; SOFTWARE.
 
 
 ;;;;;;;;;;;;;;;
@@ -44,7 +59,7 @@
 ;; Keywords: ember ember.js emberjs
 ;; License: MIT
 
-
+;;; Code:
 (require 'cl)
 
 
@@ -93,7 +108,7 @@
           ((string-match "^\\(.*\\)s$" noun)
            (match-string 1 noun))
           (t noun))))
-           
+
 
 ;;;;;;;;;;;;;;;;;;;;
 ;;; General Settings
@@ -157,12 +172,12 @@ From the string base, a type can be built.")
                 (list (list base-type-regex target-kind base-location base-type)))))
 
 (defmacro ember--define-matchers (&rest matchers)
-  `(progn ,@(loop for matcher in matchers collect 
+  `(progn ,@(loop for matcher in matchers collect
                   `(ember--define-matcher ,(car matcher) ,(cadr matcher)
                                           (list ,@(caddr matcher))
                                           ,@(cdddr matcher)))))
 
-(ember--define-matchers 
+(ember--define-matchers
    ;; BEGIN contains the definition for each matcher
    ;; the first two columns are a regexp, the rest is executed as code
    ;; base-type  | target-kind | concatenation lambda body                        | override base-type
@@ -202,7 +217,7 @@ options in OPTIONS.
 OPTIONS should be an alist containing the keywords :CLASS and
 :EXTENSION.  Some matchers may not require both to be supplied."
   (apply #'concat
-         (loop for item in 
+         (loop for item in
                (apply #'ember--matcher-partial-fill matcher-template options)
                if (stringp item) collect item
                else collect "")))
@@ -276,7 +291,7 @@ template to their corresponding values in RELATIVE-PATH."
                                    if (symbolp component)
                                    collect component)))
       (let ((template-regex
-             (apply #'ember--matcher-relative-path 
+             (apply #'ember--matcher-relative-path
                     (ember--regex-escape-matcher-template matcher-template)
                     (loop for symbol in component-symbols append
                           (list symbol "\\(.+\\)")))))
@@ -495,7 +510,7 @@ requests the user if the file should be created."
       (loop for relative-file in file-list
             for absolute-file = (concat ember-root relative-file)
             if (file-exists-p absolute-file)
-            do 
+            do
                (find-file absolute-file)
                (return-from found-file absolute-file))
       (when (string= target-kind "template")
@@ -582,7 +597,7 @@ the corresponding source."
            (shell-command-to-string (concat "ember generate " generator " " kind " " options))))
       (message response)
       ;; open the first file that was created
-      (find-file (concat default-directory "/" 
+      (find-file (concat default-directory "/"
                          (ember--match-by-index "\s+create\s+\\(.*\\)" response 1))))))
 
 (defun ember-generate-controller (kind options)
@@ -638,10 +653,10 @@ the corresponding source."
 (defun ember--generators ()
   "Returns a list of all generators."
   (split-string
-   (shell-command-to-string 
+   (shell-command-to-string
     "ember help generate | grep -P '      (.*)' | grep -P -o '[a-z\\-]+' | sort | uniq")))
 
-(defun ember--interactive-generator-options 
+(defun ember--interactive-generator-options
   (&optional supplied-generator supplied-kind)
   "Generates a function interactive statement which ensures the
 arguments for the generator are known.
@@ -660,25 +675,25 @@ SUPPLIED-KIND will be queried with the default being the value
 found by `ember--current-file-components'."
   (destructuring-bind (current-base-class current-base-kind current-target-kind)
       ;; fetch current values from current-file-components
-      (condition-case err 
+      (condition-case err
           (ember--current-file-components)
         ('error (list nil nil nil)))
     ;; ask the user to override
     (destructuring-bind (new-generator new-kind new-options)
         (if current-prefix-arg
-            (let* ((generator (or supplied-generator current-base-kind 
+            (let* ((generator (or supplied-generator current-base-kind
                                   (ember--completing-read "Generator: " (ember--generators))))
                    (kind (or supplied-kind current-base-class
                              (read-string (concat "Generating " generator " for kind: ")))))
               (list generator kind ""))
-          (let* ((generator (or supplied-generator 
+          (let* ((generator (or supplied-generator
                                 (ember--completing-read "Generator: " (ember--generators))))
                  (kind (or supplied-kind (read-string (concat "Generating " generator " for kind: ") current-base-class)))
                  (options (read-string "Options: " "")))
             (list generator kind options)))
       ;; figure out which values we should return
       (let ((result (list new-options)))
-        (unless supplied-kind 
+        (unless supplied-kind
           (push new-kind result))
         (unless supplied-generator
           (push new-generator result))
@@ -736,7 +751,7 @@ found by `ember--current-file-components'."
      (1 compilation-error-face))))
 
 (defun ember--resolve-error-filename ()
-  "Resolves a filename that is relative to the app directory"
+  "Resolves a filename that is relative to the app directory."
   (expand-file-name (match-string 1)
                     (concat default-directory "app")))
 
@@ -757,6 +772,7 @@ For example, if you have a project named foo, the paths look like
                       (concat default-directory "app"))))
 
 (defun ember--load-error-regexps (regexps)
+  "Load compilation error regexps from REGEXPS."
   (make-local-variable 'compilation-error-regexp-alist-alist)
   (make-local-variable 'compilation-error-regexp-alist)
   (dolist
@@ -765,7 +781,7 @@ For example, if you have a project named foo, the paths look like
     (add-to-list 'compilation-error-regexp-alist (car regexp))))
 
 (defun ember-serve-or-display (command)
-  "Run ember serve, or switch to buffer if already running."
+  "Run ember serve using COMMAND, or switch to buffer if already running."
   (interactive "i")
   (let* ((buffer-name "*ember-serve*")
          (buffer (get-buffer buffer-name)))
@@ -805,6 +821,7 @@ For example, if you have a project named foo, the paths look like
                    (message "Ember serve exited: %s" result)))))
 
 (defun ember-build (command)
+  "Run ember build using COMMAND."
   (interactive (list
                 (read-shell-command "Build command: "
                                     ember-build-command
@@ -817,6 +834,7 @@ For example, if you have a project named foo, the paths look like
   (ember--load-error-regexps ember--error-regexps))
 
 (defun ember-test (command)
+  "Run ember test using COMMAND."
   (interactive (list
                 (read-shell-command "Test command: "
                                     ember-test-command
@@ -876,3 +894,4 @@ For example, if you have a project named foo, the paths look like
   nil " [EM]" ember-mode-keymap)
 
 (provide 'ember-mode)
+;;; ember-mode.el ends here
