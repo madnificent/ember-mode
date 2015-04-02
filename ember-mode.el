@@ -1,6 +1,41 @@
 ;;; ember-mode.el --- Ember navigation mode for emacs
 
-;; This is a proof of concept for ember-mode.  ember-mode helps you 
+;;;;;;;;;;;;;;;;
+;;;; MIT License
+
+;; Copyright (C) 2014 Aad Versteden
+;;
+;; Permission is hereby granted, free of charge, to any person
+;; obtaining a copy of this software and associated documentation
+;; files (the "Software"), to deal in the Software without
+;; restriction, including without limitation the rights to use, copy,
+;; modify, merge, publish, distribute, sublicense, and/or sell copies
+;; of the Software, and to permit persons to whom the Software is
+;; furnished to do so, subject to the following conditions:
+;;
+;; The above copyright notice and this permission notice shall be
+;; included in all copies or substantial portions of the Software.
+;;
+;; THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+;; EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+;; MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+;; NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+;; BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+;; ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+;; CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+;; SOFTWARE.
+
+;;;;;;;;;;;;;;;
+;;;; Accounting
+
+;; Version 0.2.3
+;; Author: Aad Versteden <madnificent@gmail.com>
+;; Keywords: ember ember.js emberjs
+;; License: MIT
+;; Package-Requires: ((cl-lib "0.5"))
+
+;;; Commentary:
+;; This is a proof of concept for ember-mode.  ember-mode helps you
 ;; navigate through the files in your emberjs project.  A bunch of
 ;; bindings have been created to quickly jump to the relevant sources
 ;; given that you're visiting a recognised file (*) in the ember project.
@@ -23,34 +58,13 @@
 ;;     needs improvement so you can always jump back from a found file.
 ;;     Some (somewhat) less common files are not recognised yet.
 
-
-;;;;;;;;;;;;;;;;
-;;;; MIT License
-
-;; Copyright (C) 2014 Aad Versteden
-;;
-;; Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
-;;
-;; The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-;;
-;; THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-
-;;;;;;;;;;;;;;;
-;;;; Accounting
-
-;; Version 0.2.3
-;; Author: Aad Versteden <madnificent@gmail.com>
-;; Keywords: ember ember.js emberjs
-;; License: MIT
-
-
-(require 'cl)
-
+;;; Code:
+(require 'cl-lib)
 
 (defgroup ember nil
   "Ember-mode customizations."
-  :prefix "ember-")
+  :prefix "ember-"
+  :group 'tools)
 
 ;;;;;;;;;;;;
 ;;;; plurals
@@ -67,8 +81,8 @@
 (defun ember--pluralize-noun (noun)
   "Pluralizes NOUN."
   (save-match-data
-    (cond ((find noun ember-pluralization-irregular-nouns :key #'car :test #'string=)
-           (cdr (find noun ember-pluralization-irregular-nouns :key #'car :test #'string=)))
+    (cond ((cl-find noun ember-pluralization-irregular-nouns :key #'car :test #'string=)
+           (cdr (cl-find noun ember-pluralization-irregular-nouns :key #'car :test #'string=)))
           ((string-match-p "[yo]$" noun)
            (message "Don't know how to translate %s" noun)
            noun)
@@ -82,8 +96,8 @@
 (defun ember--singularize-noun (noun)
   "Singularizes NOUN."
   (save-match-data
-    (cond ((find noun ember-pluralization-irregular-nouns :key #'cdr :test #'string=)
-           (car (find noun ember-pluralization-irregular-nouns :key #'cdr :test #'string=)))
+    (cond ((cl-find noun ember-pluralization-irregular-nouns :key #'cdr :test #'string=)
+           (car (cl-find noun ember-pluralization-irregular-nouns :key #'cdr :test #'string=)))
           ((string-match "^\\(.*ch\\)es$" noun)
            (match-string 1 noun))
           ((string-match "^\\(.*[xs]\\)es$" noun)
@@ -93,7 +107,7 @@
           ((string-match "^\\(.*\\)s$" noun)
            (match-string 1 noun))
           (t noun))))
-           
+
 
 ;;;;;;;;;;;;;;;;;;;;
 ;;; General Settings
@@ -157,12 +171,12 @@ From the string base, a type can be built.")
                 (list (list base-type-regex target-kind base-location base-type)))))
 
 (defmacro ember--define-matchers (&rest matchers)
-  `(progn ,@(loop for matcher in matchers collect 
+  `(progn ,@(cl-loop for matcher in matchers collect
                   `(ember--define-matcher ,(car matcher) ,(cadr matcher)
-                                          (list ,@(caddr matcher))
-                                          ,@(cdddr matcher)))))
+                                          (list ,@(cl-caddr matcher))
+                                          ,@(cl-cdddr matcher)))))
 
-(ember--define-matchers 
+(ember--define-matchers
    ;; BEGIN contains the definition for each matcher
    ;; the first two columns are a regexp, the rest is executed as code
    ;; base-type  | target-kind | concatenation lambda body                        | override base-type
@@ -188,8 +202,8 @@ with the supplied OPTIONS.
 
 OPTIONS is expected to be a plist containing the keywords
 :extension and :class if they are available."
-  (loop for item in matcher-template
-        for substitution = (getf options item)
+  (cl-loop for item in matcher-template
+        for substitution = (cl-getf options item)
         if substitution
         collect substitution
         else
@@ -202,14 +216,14 @@ options in OPTIONS.
 OPTIONS should be an alist containing the keywords :CLASS and
 :EXTENSION.  Some matchers may not require both to be supplied."
   (apply #'concat
-         (loop for item in 
+         (cl-loop for item in
                (apply #'ember--matcher-partial-fill matcher-template options)
                if (stringp item) collect item
                else collect "")))
 
 (defun ember--matcher-matches-p (matcher base-type target-kind)
   "Returns non-nil iff MATCHER matches BASE-TYPE and TARGET-KIND."
-  (destructuring-bind (base-type-regexp target-kind-regexp)
+  (cl-destructuring-bind (base-type-regexp target-kind-regexp)
       matcher
     (and (string-match base-type-regexp base-type)
          (string-match target-kind-regexp target-kind))))
@@ -218,7 +232,7 @@ OPTIONS should be an alist containing the keywords :CLASS and
   "Returns the matcher templates which match BASE-TYPE and
 TARGET-KIND in the order in which the matchers have been
 defined."
-  (loop for (base-type-regexp target-kind-regexp matcher-template) in *ember--matcher-templates*
+  (cl-loop for (base-type-regexp target-kind-regexp matcher-template) in *ember--matcher-templates*
         if (and (string-match base-type-regexp (or base-type ""))
                 (string-match target-kind-regexp (or target-kind "")))
         collect matcher-template))
@@ -226,7 +240,7 @@ defined."
 (defun ember--matchers-for (base-type target-kind)
   "Similar to ember--matcher-templates-for, but returning the the
 whole matcher"
-  (loop for matcher in *ember--matcher-templates*
+  (cl-loop for matcher in *ember--matcher-templates*
         for (base-type-regexp target-kind-regexp matcher-template) = matcher
         if (and (string-match base-type-regexp (or base-type ""))
                 (string-match target-kind-regexp (or target-kind "")))
@@ -234,20 +248,20 @@ whole matcher"
 
 (defun ember--matcher-hbs-template-p (matcher-template)
   "Returns non-nil iff the matcher-template has a handlebars-extension"
-  (find :hbext matcher-template))
+  (cl-find :hbext matcher-template))
 
 (defun ember--matcher-js-template-p (matcher-template)
   "Returns non-nil iff the matcher-template has a javascript-extension"
-  (find :jsext matcher-template))
+  (cl-find :jsext matcher-template))
 
 (defun ember--matcher-template-map-extensions (matcher-template)
   "Returns a new matcher-template for each of the file-types which fit
 the matcher-template"
   (cond ((ember--matcher-js-template-p matcher-template)
-         (loop for ext in ember-script-file-types collect
+         (cl-loop for ext in ember-script-file-types collect
                (ember--matcher-partial-fill matcher-template :jsext ext)))
         ((ember--matcher-hbs-template-p matcher-template)
-         (loop for ext in ember-template-file-types collect
+         (cl-loop for ext in ember-template-file-types collect
                (ember--matcher-partial-fill matcher-template :hbext ext)))
         (t (list matcher-template))))
 
@@ -256,9 +270,9 @@ the matcher-template"
 a regular expression.  The most common regex patterns will have been
 replaced."
   (let ((symbols-to-replace (list "." "+" "*")))
-    (loop for char in symbols-to-replace
+    (cl-loop for char in symbols-to-replace
           do (setf matcher-template
-                   (loop for component in matcher-template
+                   (cl-loop for component in matcher-template
                          if (stringp component)
                          collect (replace-regexp-in-string (concat "\\" char)
                                                            (concat "\\\\" char)
@@ -272,17 +286,17 @@ replaced."
 If this returns non-nil, a PLIST is returned which maps the variables in the
 template to their corresponding values in RELATIVE-PATH."
   (let ((matcher-template (ember--get-matcher-template matcher)))
-    (let ((component-symbols (loop for component in matcher-template
+    (let ((component-symbols (cl-loop for component in matcher-template
                                    if (symbolp component)
                                    collect component)))
       (let ((template-regex
-             (apply #'ember--matcher-relative-path 
+             (apply #'ember--matcher-relative-path
                     (ember--regex-escape-matcher-template matcher-template)
-                    (loop for symbol in component-symbols append
+                    (cl-loop for symbol in component-symbols append
                           (list symbol "\\(.+\\)")))))
         (save-match-data
           (when (string-match template-regex relative-path)
-            (loop for component-symbol in component-symbols
+            (cl-loop for component-symbol in component-symbols
                   for index from 1
                   append
                   (list component-symbol (match-string index relative-path)))))))))
@@ -354,18 +368,18 @@ The components are defined in `ember--relative-ember-source-path'.  This functio
 returns the base-class, the base-type and the target-kind of the current
 file."
   (let ((components-and-matcher
-         (loop for matcher in *ember--matcher-templates*
+         (cl-loop for matcher in *ember--matcher-templates*
                for components = (ember--matcher-matches-file-p matcher file)
                if components
                return (list components matcher))))
     (when components-and-matcher
-      (destructuring-bind (components matcher) components-and-matcher
-        (let ((base-class (getf components :class))
+      (cl-destructuring-bind (components matcher) components-and-matcher
+        (let ((base-class (cl-getf components :class))
               (base-type  (fourth matcher))
               (target-kind (cond
-                            ((find (getf components :jsext) ember-script-file-types :test #'equal)
+                            ((cl-find (cl-getf components :jsext) ember-script-file-types :test #'equal)
                              "source")
-                            ((find (getf components :hbext) ember-template-file-types :test #'equal)
+                            ((cl-find (cl-getf components :hbext) ember-template-file-types :test #'equal)
                              "template"))))
           (list base-class base-type target-kind))))))
 
@@ -387,7 +401,7 @@ the currently open file.
 
 ASSUME-JS is an override.  If this is true, it is assumed that a
 javascript (or coffeescript) source file should be opened."
-  (destructuring-bind (base-class base-type target-kind)
+  (cl-destructuring-bind (base-class base-type target-kind)
       (ember--current-file-components)
     (let ((new-target-kind (if assume-js "source" target-kind)))
       (if (and (equal type base-type)
@@ -399,7 +413,7 @@ javascript (or coffeescript) source file should be opened."
   "Opens an ember file for KIND.
 
 Kind should be one of \"template\" or \"source\"."
-  (destructuring-bind (base-class base-type target-kind)
+  (cl-destructuring-bind (base-class base-type target-kind)
       (ember--current-file-components)
     (if (equal kind target-kind)
         (ember--select-file-by-type-and-kind (concat "Open " base-type ": ") base-type kind)
@@ -429,7 +443,7 @@ MAXDEPTH is zero or negative."
                (dolist (f (directory-files dir t "[A-Za-z]"))
                  (cond ((file-regular-p f)
                         (let ((relative-file (ember--file-relative-to-root f)))
-                          (when (some (lambda (m) (ember--matcher-matches-file-p m relative-file)) matchers)
+                          (when (cl-some (lambda (m) (ember--matcher-matches-file-p m relative-file)) matchers)
                             (push f matching-files))))
                        ((file-directory-p f)
                         (push f walk-dirs))))))
@@ -439,7 +453,7 @@ MAXDEPTH is zero or negative."
           (dolist (dir walk-now)
             (walk-directory dir)))))
     (setf matching-files (mapcar #'ember--file-relative-to-root matching-files))
-    (remove-if #'ember--temporary-file-p matching-files)))
+    (cl-remove-if #'ember--temporary-file-p matching-files)))
 
 (defun ember--last-char (string)
   "Returns the last character of STRING."
@@ -492,10 +506,10 @@ requests the user if the file should be created."
                  (ember--relative-ember-source-path (ember--pluralize-noun base-class) base-type target-kind)
                  (ember--relative-ember-source-path (ember--singularize-noun base-class) base-type target-kind))))
     (block found-file
-      (loop for relative-file in file-list
+      (cl-loop for relative-file in file-list
             for absolute-file = (concat ember-root relative-file)
             if (file-exists-p absolute-file)
-            do 
+            do
                (find-file absolute-file)
                (return-from found-file absolute-file))
       (when (string= target-kind "template")
@@ -582,7 +596,7 @@ the corresponding source."
            (shell-command-to-string (concat "ember generate " generator " " kind " " options))))
       (message response)
       ;; open the first file that was created
-      (find-file (concat default-directory "/" 
+      (find-file (concat default-directory "/"
                          (ember--match-by-index "\s+create\s+\\(.*\\)" response 1))))))
 
 (defun ember-generate-controller (kind options)
@@ -638,10 +652,10 @@ the corresponding source."
 (defun ember--generators ()
   "Returns a list of all generators."
   (split-string
-   (shell-command-to-string 
+   (shell-command-to-string
     "ember help generate | grep -P '      (.*)' | grep -P -o '[a-z\\-]+' | sort | uniq")))
 
-(defun ember--interactive-generator-options 
+(defun ember--interactive-generator-options
   (&optional supplied-generator supplied-kind)
   "Generates a function interactive statement which ensures the
 arguments for the generator are known.
@@ -658,27 +672,27 @@ or if the user has supplied a prefix-argument.  In the case of a
 prefix argument all values not supplied by SUPPLIED-GENERATOR or
 SUPPLIED-KIND will be queried with the default being the value
 found by `ember--current-file-components'."
-  (destructuring-bind (current-base-class current-base-kind current-target-kind)
+  (cl-destructuring-bind (current-base-class current-base-kind current-target-kind)
       ;; fetch current values from current-file-components
-      (condition-case err 
+      (condition-case err
           (ember--current-file-components)
         ('error (list nil nil nil)))
     ;; ask the user to override
-    (destructuring-bind (new-generator new-kind new-options)
+    (cl-destructuring-bind (new-generator new-kind new-options)
         (if current-prefix-arg
-            (let* ((generator (or supplied-generator current-base-kind 
+            (let* ((generator (or supplied-generator current-base-kind
                                   (ember--completing-read "Generator: " (ember--generators))))
                    (kind (or supplied-kind current-base-class
                              (read-string (concat "Generating " generator " for kind: ")))))
               (list generator kind ""))
-          (let* ((generator (or supplied-generator 
+          (let* ((generator (or supplied-generator
                                 (ember--completing-read "Generator: " (ember--generators))))
                  (kind (or supplied-kind (read-string (concat "Generating " generator " for kind: ") current-base-class)))
                  (options (read-string "Options: " "")))
             (list generator kind options)))
       ;; figure out which values we should return
       (let ((result (list new-options)))
-        (unless supplied-kind 
+        (unless supplied-kind
           (push new-kind result))
         (unless supplied-generator
           (push new-generator result))
@@ -736,7 +750,7 @@ found by `ember--current-file-components'."
      (1 compilation-error-face))))
 
 (defun ember--resolve-error-filename ()
-  "Resolves a filename that is relative to the app directory"
+  "Resolves a filename that is relative to the app directory."
   (expand-file-name (match-string 1)
                     (concat default-directory "app")))
 
@@ -757,6 +771,7 @@ For example, if you have a project named foo, the paths look like
                       (concat default-directory "app"))))
 
 (defun ember--load-error-regexps (regexps)
+  "Load compilation error regexps from REGEXPS."
   (make-local-variable 'compilation-error-regexp-alist-alist)
   (make-local-variable 'compilation-error-regexp-alist)
   (dolist
@@ -765,7 +780,7 @@ For example, if you have a project named foo, the paths look like
     (add-to-list 'compilation-error-regexp-alist (car regexp))))
 
 (defun ember-serve-or-display (command)
-  "Run ember serve, or switch to buffer if already running."
+  "Run ember serve using COMMAND, or switch to buffer if already running."
   (interactive "i")
   (let* ((buffer-name "*ember-serve*")
          (buffer (get-buffer buffer-name)))
@@ -805,6 +820,7 @@ For example, if you have a project named foo, the paths look like
                    (message "Ember serve exited: %s" result)))))
 
 (defun ember-build (command)
+  "Run ember build using COMMAND."
   (interactive (list
                 (read-shell-command "Build command: "
                                     ember-build-command
@@ -817,6 +833,7 @@ For example, if you have a project named foo, the paths look like
   (ember--load-error-regexps ember--error-regexps))
 
 (defun ember-test (command)
+  "Run ember test using COMMAND."
   (interactive (list
                 (read-shell-command "Test command: "
                                     ember-test-command
@@ -862,16 +879,18 @@ For example, if you have a project named foo, the paths look like
 (define-key ember-command-prefix (kbd "g u") #'ember-generate-util)
 (define-key ember-command-prefix (kbd "g s") #'ember-generate-service)
 
-(define-key ember-command-prefix (kbd "b") 'ember-build)
-(define-key ember-command-prefix (kbd "s") 'ember-serve-or-display)
-(define-key ember-command-prefix (kbd "t") 'ember-test)
+(define-key ember-command-prefix (kbd "r b") 'ember-build)
+(define-key ember-command-prefix (kbd "r s") 'ember-serve-or-display)
+(define-key ember-command-prefix (kbd "r t") 'ember-test)
 
 (fset 'ember-command-prefix ember-command-prefix)
 
 (define-key ember-mode-keymap ember-keymap-prefix 'ember-command-prefix)
 
+;;;###autoload
 (define-minor-mode ember-mode
   "Mode for navigating around ember-cli applications."
   nil " [EM]" ember-mode-keymap)
 
 (provide 'ember-mode)
+;;; ember-mode.el ends here
