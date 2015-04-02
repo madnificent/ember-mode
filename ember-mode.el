@@ -862,9 +862,9 @@ For example, if you have a project named foo, the paths look like
 (define-key ember-command-prefix (kbd "g u") #'ember-generate-util)
 (define-key ember-command-prefix (kbd "g s") #'ember-generate-service)
 
-(define-key ember-command-prefix (kbd "b") 'ember-build)
-(define-key ember-command-prefix (kbd "s") 'ember-serve-or-display)
-(define-key ember-command-prefix (kbd "t") 'ember-test)
+(define-key ember-command-prefix (kbd "r b") 'ember-build)
+(define-key ember-command-prefix (kbd "r s") 'ember-serve-or-display)
+(define-key ember-command-prefix (kbd "r t") 'ember-test)
 
 (fset 'ember-command-prefix ember-command-prefix)
 
