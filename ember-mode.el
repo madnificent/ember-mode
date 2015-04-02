@@ -870,6 +870,7 @@ For example, if you have a project named foo, the paths look like
 
 (define-key ember-mode-keymap ember-keymap-prefix 'ember-command-prefix)
 
+;;;###autoload
 (define-minor-mode ember-mode
   "Mode for navigating around ember-cli applications."
   nil " [EM]" ember-mode-keymap)
