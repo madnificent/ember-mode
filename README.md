@@ -35,9 +35,9 @@ Let's assume you have the following files in your emberjs folder structure:
 
 #### navigation ####
 
-Say you are visiting the `models/friend.coffee` file with `ember-mode` enabled.  Pressing `C-c c f r` will move to `routes/friends.coffee`.
+Say you are visiting the `models/friend.coffee` file with `ember-mode` enabled.  Pressing `C-c . f r` will move to `routes/friends.coffee`.
 
-If, from there on, you enter `C-c c f c` ember-mode will try to open `controllers/friends.coffee`.  As that doesn't exist, it'll try all of the following:
+If, from there on, you enter `C-c . f c` ember-mode will try to open `controllers/friends.coffee`.  As that doesn't exist, it'll try all of the following:
 
     - controllers/friends.js
     - controllers/friend.coffee
@@ -48,16 +48,16 @@ As none of these exist, it lists all controllers and lets you select one of them
 
 #### manual generation ####
 
-Say we are visiting `routes/plugins.coffee` and would like to generate a `Peer` model.  Pressing `C-c c g m` will ask for the name of the class to generate (with a default of `plugins`) and the options to be passed to the generator.  The default is hinted based on the current file.
+Say we are visiting `routes/plugins.coffee` and would like to generate a `Peer` model.  Pressing `C-c . g m` will ask for the name of the class to generate (with a default of `plugins`) and the options to be passed to the generator.  The default is hinted based on the current file.
 
-Similarly, if we are visiting `routes/plugins.coffee` and want to generate a controller, pressing `C-c c g c` will ask for the name of the controller to generate (with a default of `plugins`) and the options to be passed to the generator.  In essence, pressing enter twice will generate `controllers/plugins.coffee`.
+Similarly, if we are visiting `routes/plugins.coffee` and want to generate a controller, pressing `C-c . g c` will ask for the name of the controller to generate (with a default of `plugins`) and the options to be passed to the generator.  In essence, pressing enter twice will generate `controllers/plugins.coffee`.
 
 
 #### automatic generation ####
 
-Say we are visiting `models/friend.coffee` and want to generate the `friend` route.  Pressing `C-u C-c c g r` will use the ember generators to generate the route and open it (without posing any questions).
+Say we are visiting `models/friend.coffee` and want to generate the `friend` route.  Pressing `C-u C-c . g r` will use the ember generators to generate the route and open it (without posing any questions).
 
-Note that pressing `C-c c f r` would have navigated to `routes/friends.coffee` and wouldn't have found the newly generated route before.
+Note that pressing `C-c . f r` would have navigated to `routes/friends.coffee` and wouldn't have found the newly generated route before.
 
 
 *PRO TIP:* If you are using coffeescript, enable `ember-cli-coffeescript` to generate coffeescript instead of javascript files.  If you don't, javascript files will be generated.
@@ -67,8 +67,8 @@ Note that pressing `C-c c f r` would have navigated to `routes/friends.coffee` a
 
 ### building, serving, testing ###
 
-`ember build` and `ember test` can be run with `C-c c r b` and `C-c c r t`
-respectively, and `C-c c r s` will either run `ember serve`, or bring up
+`ember build` and `ember test` can be run with `C-c . r b` and `C-c . r t`
+respectively, and `C-c . r s` will either run `ember serve`, or bring up
 the serve buffer if already running. These commands use compilation
 mode to link errors to files with line and column numbers. If the
 buffer that `ember serve` runs in is buried, it will also notify of
@@ -76,38 +76,38 @@ build status via minibuffer messages.
 
 ### published bindings ###
 
-    C-c c f c       ember-open-controller
-    C-c c f m       ember-open-model
-    C-c c f o       ember-open-router
-    C-c c f p       ember-open-component
-    C-c c f r       ember-open-route
-    C-c c f j       ember-open-javascript
-    C-c c f t       ember-open-template
-    C-c c f v       ember-open-view
-    C-c c f x       ember-open-mixin
-    C-c c f i       ember-open-initializer
-    C-c c f u       ember-open-util
-    C-c c f s       ember-open-service
+    C-c . f c       ember-open-controller
+    C-c . f m       ember-open-model
+    C-c . f o       ember-open-router
+    C-c . f p       ember-open-component
+    C-c . f r       ember-open-route
+    C-c . f j       ember-open-javascript
+    C-c . f t       ember-open-template
+    C-c . f v       ember-open-view
+    C-c . f x       ember-open-mixin
+    C-c . f i       ember-open-initializer
+    C-c . f u       ember-open-util
+    C-c . f s       ember-open-service
 
-    C-c c g c       ember-generate-controller
-    C-c c g m       ember-generate-model
-    C-c c g o       ember-generate-router
-    C-c c g p       ember-generate-component
-    C-c c g r       ember-generate-route
-    C-c c g j       ember-generate-javascript
-    C-c c g t       ember-generate-template
-    C-c c g v       ember-generate-view
-    C-c c g x       ember-generate-mixin
-    C-c c g i       ember-generate-initializer
-    C-c c g u       ember-generate-util
-    C-c c g s       ember-generate-service
-    C-c c g g       ember-generate
+    C-c . g c       ember-generate-controller
+    C-c . g m       ember-generate-model
+    C-c . g o       ember-generate-router
+    C-c . g p       ember-generate-component
+    C-c . g r       ember-generate-route
+    C-c . g j       ember-generate-javascript
+    C-c . g t       ember-generate-template
+    C-c . g v       ember-generate-view
+    C-c . g x       ember-generate-mixin
+    C-c . g i       ember-generate-initializer
+    C-c . g u       ember-generate-util
+    C-c . g s       ember-generate-service
+    C-c . g g       ember-generate
 
-    C-c c r b       ember-build
-    C-c c r s       ember-serve-or-display
-    C-c c r t       ember-test
+    C-c . r b       ember-build
+    C-c . r s       ember-serve-or-display
+    C-c . r t       ember-test
 
-If you wish to use a different prefix other than `C-c c`, you may
+If you wish to use a different prefix other than `C-c .`, you may
 customize the variable `ember-keymap-prefix` with `M-x
 customize-variable`.
 

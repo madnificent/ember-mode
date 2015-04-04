@@ -128,7 +128,7 @@ The first item in this list is used as the 'default', used when creating files."
   :type '(repeat string)
   :group 'ember)
 
-(defcustom ember-keymap-prefix (kbd "C-c c")
+(defcustom ember-keymap-prefix (kbd "C-c .")
   "Ember keymap prefix."
   :group 'ember
   :type 'key-sequence
