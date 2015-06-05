@@ -28,7 +28,7 @@
 ;;;;;;;;;;;;;;;
 ;;;; Accounting
 
-;; Version 0.2.3
+;; Version: 0.2.3
 ;; Author: Aad Versteden <madnificent@gmail.com>
 ;; Keywords: ember ember.js emberjs
 ;; License: MIT
