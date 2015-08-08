@@ -13,7 +13,7 @@ Ember-mode helps in jumping and generating javascript files in an emberjs projec
 
 ### example usage ###
 
-`ember-mode` can be used to either generate, or navigate between files.
+`ember-mode` can be used to either generate, destroy, or navigate between files.
 
 #### example setting ####
 
@@ -102,6 +102,20 @@ build status via minibuffer messages.
     C-c . g u       ember-generate-util
     C-c . g s       ember-generate-service
     C-c . g g       ember-generate
+
+    C-c . d c       ember-destroy-controller
+    C-c . d m       ember-destroy-model
+    C-c . d o       ember-destroy-router
+    C-c . d p       ember-destroy-component
+    C-c . d r       ember-destroy-route
+    C-c . d j       ember-destroy-javascript
+    C-c . d t       ember-destroy-template
+    C-c . d v       ember-destroy-view
+    C-c . d x       ember-destroy-mixin
+    C-c . d i       ember-destroy-initializer
+    C-c . d u       ember-destroy-util
+    C-c . d s       ember-destroy-service
+    C-c . d g       ember-destroy
 
     C-c . r b       ember-build
     C-c . r s       ember-serve-or-display

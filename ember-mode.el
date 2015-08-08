@@ -656,7 +656,7 @@ the corresponding source."
     "ember help generate | grep -P '      (.*)' | grep -P -o '[a-z\\-]+' | sort | uniq")))
 
 (defun ember--interactive-generator-options
-  (&optional supplied-generator supplied-kind)
+  (&optional supplied-generator supplied-kind destroy-p)
   "Generates a function interactive statement which ensures the
 arguments for the generator are known.
 
@@ -665,6 +665,10 @@ The interative statement will try to find all unknown values from
 
 If a value was supplied to this macro directly, then that value
 will be assumed to be the final value.
+
+If destroy-p is true, the user will be informed the requests are
+regarding the destruction process, rather than regarding the
+generate-process.
 
 The user will be queried for all values which weren't supplied
 and which could not be found by `ember--current-file-components'
@@ -683,11 +687,14 @@ found by `ember--current-file-components'."
             (let* ((generator (or supplied-generator current-base-kind
                                   (ember--completing-read "Generator: " (ember--generators))))
                    (kind (or supplied-kind current-base-class
-                             (read-string (concat "Generating " generator " for kind: ")))))
+                             (read-string (concat (if destroy-p "Destroying" "Generating") " "
+                                                  generator " for kind: ")))))
               (list generator kind ""))
           (let* ((generator (or supplied-generator
                                 (ember--completing-read "Generator: " (ember--generators))))
-                 (kind (or supplied-kind (read-string (concat "Generating " generator " for kind: ") current-base-class)))
+                 (kind (or supplied-kind (read-string (concat (if destroy-p "Destroying" "Generating") " "
+                                                              generator " for kind: ")
+                                                      current-base-class)))
                  (options (read-string "Options: " "")))
             (list generator kind options)))
       ;; figure out which values we should return
@@ -697,6 +704,70 @@ found by `ember--current-file-components'."
         (unless supplied-generator
           (push new-generator result))
         result))))
+
+
+;;; destroy
+(defun ember-destroy (generator kind options)
+  "Runs an ember generator."
+  (interactive (ember--interactive-generator-options nil nil t))
+  (let ((default-directory (ember--current-project-root)))
+    (let ((response
+           (shell-command-to-string (concat "ember destroy " generator " " kind " " options))))
+      (message response)
+      ;; open the first file that was created
+      (find-file (concat default-directory "/"
+                         (ember--match-by-index "\s+create\s+\\(.*\\)" response 1))))))
+
+(defun ember-destroy-controller (kind options)
+  "Destroys a controller."
+  (interactive (ember--interactive-generator-options "controller" nil t))
+  (ember-destroy "controller" kind options))
+
+(defun ember-destroy-component (kind options)
+  "Destroys a component."
+  (interactive (ember--interactive-generator-options "component" nil t))
+  (ember-destroy "component" kind options))
+
+(defun ember-destroy-model (kind options)
+  "Destroys a model."
+  (interactive (ember--interactive-generator-options "model" nil t))
+  (ember-destroy "model" kind options))
+
+(defun ember-destroy-route (kind options)
+  "Destroys a route."
+  (interactive (ember--interactive-generator-options "route" nil t))
+  (ember-destroy "route" kind options))
+
+(defun ember-destroy-mixin (kind options)
+  "Destroys a mixin."
+  (interactive (ember--interactive-generator-options "mixin" nil t))
+  (ember-destroy "mixin" kind options))
+
+(defun ember-destroy-initializer (kind options)
+  "Destroys a initializer."
+  (interactive (ember--interactive-generator-options "initializer" nil t))
+  (ember-destroy "initializer" kind options))
+
+(defun ember-destroy-util (kind options)
+  "Destroys a utility."
+  (interactive (ember--interactive-generator-options "util" nil t))
+  (ember-destroy "util" kind options))
+
+(defun ember-destroy-service (kind options)
+  "Destroys a service."
+  (interactive (ember--interactive-generator-options "service" nil t))
+  (ember-destroy "service" kind options))
+
+(defun ember-destroy-template (kind options)
+  "Destroys a template."
+  (interactive (ember--interactive-generator-options "template" nil t))
+  (ember-destroy "template" kind options))
+
+(defun ember-destroy-view (kind options)
+  "Destroys a view."
+  (interactive (ember--interactive-generator-options "view" nil t))
+  (ember-destroy "view" kind options))
+
 
 ;;;;;;;;;;;;;;;;;;;;;
 ;;; Compilation modes
@@ -878,6 +949,19 @@ For example, if you have a project named foo, the paths look like
 (define-key ember-command-prefix (kbd "g i") #'ember-generate-initializer)
 (define-key ember-command-prefix (kbd "g u") #'ember-generate-util)
 (define-key ember-command-prefix (kbd "g s") #'ember-generate-service)
+
+(define-key ember-command-prefix (kbd "d g") #'ember-destroy)
+(define-key ember-command-prefix (kbd "d p") #'ember-destroy-component)
+(define-key ember-command-prefix (kbd "d c") #'ember-destroy-controller)
+(define-key ember-command-prefix (kbd "d m") #'ember-destroy-model)
+(define-key ember-command-prefix (kbd "d r") #'ember-destroy-route)
+(define-key ember-command-prefix (kbd "d t") #'ember-destroy-template)
+(define-key ember-command-prefix (kbd "d j") #'ember-destroy-javascript)
+(define-key ember-command-prefix (kbd "d v") #'ember-destroy-view)
+(define-key ember-command-prefix (kbd "d x") #'ember-destroy-mixin)
+(define-key ember-command-prefix (kbd "d i") #'ember-destroy-initializer)
+(define-key ember-command-prefix (kbd "d u") #'ember-destroy-util)
+(define-key ember-command-prefix (kbd "d s") #'ember-destroy-service)
 
 (define-key ember-command-prefix (kbd "r b") 'ember-build)
 (define-key ember-command-prefix (kbd "r s") 'ember-serve-or-display)
