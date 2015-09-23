@@ -2,14 +2,9 @@
 
 Ember-mode speeds up navigation in EmberJS projects.
 
-    NOTE: ember-mode is a work in progress.  Although we use it internally, it will 
-    be extended in the future and it isn't fully functional yet.
-    
-    That being said, it will not destroy your code and it's nice to use.
-
 ## Usage ##
 
-Ember-mode helps in jumping and generating javascript files in an emberjs project.  It assumes an ember-cli-like folder-structure and supports both coffeescript and javascript extensions.
+Ember-mode helps in jumping and generating javascript files in an emberjs project.  It assumes an ember-cli-like folder-structure and supports both coffeescript and javascript extensions.  Experimental support for POD structures has recently been added.
 
 ### example usage ###
 
@@ -149,6 +144,11 @@ customize-variable`.
   file in your ember project with the following:
 
         ((nil . ((mode . ember))))
+  
+  support for POD structures can be added by using the following snippet:
+  
+        ((nil . ((mode . ember)
+                 (ember-use-pods . t))))
 
 - alternatively, to enable ember-mode for all javascript and handlebar
   files, assuming you use javascript-mode and web-mode, you would put
