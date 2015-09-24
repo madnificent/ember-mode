@@ -151,7 +151,8 @@ The first item in this list is used as the 'default', used when creating files."
 ;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; POD structure support
 
-(set (make-local-variable 'ember-use-pods) nil)
+(defvar ember-use-pods nil
+  "Default to not using the POD structure for now.")
 
 (defun ember--get-matcher-map-name ()
   "Returns the name of the map for the current matcher.
