@@ -69,6 +69,14 @@ mode to link errors to files with line and column numbers. If the
 buffer that `ember serve` runs in is buried, it will also notify of
 build status via minibuffer messages.
 
+
+### working with PODs ###
+
+Ember-mode is shipped with basic support for the POD structure.  Navigation support and generators operate the same, but keep the POD structure in mind.
+
+Ember-mode will pick up `"usePods": true` when set in `.ember-cli`.  If this is set, navigation occurs assuming a POD structure.  See the installation section for more information on overriding the detection of a POD enabled project.
+
+
 ### published bindings ###
 
     C-c . f c       ember-open-controller
@@ -145,7 +153,7 @@ customize-variable`.
 
         ((nil . ((mode . ember))))
   
-  support for POD structures can be added by using the following snippet:
+  In order to override pod structure detection, you can use the ember-use-pods variable:
   
         ((nil . ((mode . ember)
                  (ember-use-pods . t))))

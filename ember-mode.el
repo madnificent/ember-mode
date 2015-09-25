@@ -151,15 +151,28 @@ The first item in this list is used as the 'default', used when creating files."
 ;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; POD structure support
 
-(defvar ember-use-pods nil
+(defvar ember-use-pods 'unset
   "Default to not using the POD structure for now.")
 
 (defun ember--get-matcher-map-name ()
   "Returns the name of the map for the current matcher.
 
 Returns either 'pod and 'no-pod."
-  (if ember-use-pods 'pod 'no-pod))
+  (cond
+    ((eq ember-use-pods t) 'pod)
+    ((eq ember-use-pods nil) 'no-pod)
+    (t (if (ember--dot-ember-cli-has-pods-p)
+           'pod 'no-pod))))
 
+(defun ember--dot-ember-cli-has-pods-p ()
+  "Returns non-nil iff the .ember-cli file in the root sets
+usePods to true.  Very basic detection is performed to see if the
+line with usePods is commented out."
+  (let ((ember-cli-filename (concat (ember--current-project-root)
+                                    "/.ember-cli")))
+    (with-temp-buffer
+      (insert-file-contents ember-cli-filename)
+      (re-search-forward "^[^/]*\"usePods\".*:.*true" nil t))))
 
 ;;;;;;;;;;;;;;
 ;;; Navigation
