@@ -738,7 +738,7 @@ found by `ember--current-file-components'."
                  (kind (or supplied-kind (read-string (concat (if destroy-p "Destroying" "Generating") " "
                                                               generator " for kind: ")
                                                       current-base-class)))
-                 (options (read-string "Options: " (if ember-use-pods "--pod" ""))))
+                 (options (read-string "Options: " )))
             (list generator kind options)))
       ;; figure out which values we should return
       (let ((result (list new-options)))
