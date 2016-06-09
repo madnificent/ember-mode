@@ -407,7 +407,7 @@ Sources are specified in ember by a few orthogonal factors:
     (when templates
       (mapcar #'ember--matcher-relative-path
               (ember--matcher-template-map-extensions
-               (ember--matcher-partial-fill (first templates)
+               (ember--matcher-partial-fill (cl-first templates)
                                             :class base-class
                                             :base-type base-type
                                             :target-kind target-kind))))))
@@ -437,7 +437,7 @@ file."
     (when components-and-matcher
       (cl-destructuring-bind (components matcher) components-and-matcher
         (let ((base-class (cl-getf components :class))
-              (base-type  (fourth matcher))
+              (base-type  (cl-fourth matcher))
               (target-kind (cond
                             ((cl-find (cl-getf components :jsext) ember-script-file-types :test #'equal)
                              "source")
@@ -483,7 +483,7 @@ Kind should be one of \"template\" or \"source\"."
 
 (defun ember--get-matcher-template (matcher)
   "Returns the matcher template for MATCHER."
-  (third matcher))
+  (cl-third matcher))
 
 (defmacro ember--appendf (list-location appended-list)
   "Appends APPENDED-LIST to the list on LIST-LOCATION and stores
@@ -567,13 +567,13 @@ requests the user if the file should be created."
          (append (ember--relative-ember-source-path base-class base-type target-kind)
                  (ember--relative-ember-source-path (ember--pluralize-noun base-class) base-type target-kind)
                  (ember--relative-ember-source-path (ember--singularize-noun base-class) base-type target-kind))))
-    (block found-file
+    (cl-block found-file
       (cl-loop for relative-file in file-list
             for absolute-file = (concat ember-root relative-file)
             if (file-exists-p absolute-file)
             do
                (find-file absolute-file)
-               (return-from found-file absolute-file))
+               (cl-return-from found-file absolute-file))
       (when (string= target-kind "template")
         (setf base-type "template"))
       (ember--select-file-by-type-and-kind "Not found, alternatives: " base-type target-kind))))
