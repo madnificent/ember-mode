@@ -147,6 +147,11 @@ The first item in this list is used as the 'default', used when creating files."
           (const :tag "Helm" helm)
           (const :tag "Default" default)))
 
+(defcustom ember-command "ember"
+  "Ember command"
+  :group 'ember
+  :type 'string)
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; POD structure support
@@ -650,7 +655,7 @@ the corresponding source."
   (interactive (ember--interactive-generator-options))
   (let ((default-directory (ember--current-project-root)))
     (let ((response
-           (shell-command-to-string (concat "ember generate " generator " " kind " " options))))
+           (shell-command-to-string (concat ember-command " generate " generator " " kind " " options))))
       (message response)
       ;; open the first file that was created
       (find-file (concat default-directory "/"
