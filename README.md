@@ -97,7 +97,6 @@ Ember-mode will pick up `"usePods": true` when set in `.ember-cli`.  If this is 
     C-c . g o       ember-generate-router
     C-c . g p       ember-generate-component
     C-c . g r       ember-generate-route
-    C-c . g j       ember-generate-javascript
     C-c . g t       ember-generate-template
     C-c . g v       ember-generate-view
     C-c . g x       ember-generate-mixin
@@ -111,7 +110,6 @@ Ember-mode will pick up `"usePods": true` when set in `.ember-cli`.  If this is 
     C-c . d o       ember-destroy-router
     C-c . d p       ember-destroy-component
     C-c . d r       ember-destroy-route
-    C-c . d j       ember-destroy-javascript
     C-c . d t       ember-destroy-template
     C-c . d v       ember-destroy-view
     C-c . d x       ember-destroy-mixin
