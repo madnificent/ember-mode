@@ -715,7 +715,8 @@ the corresponding source."
   "Returns a list of all generators."
   (split-string
    (shell-command-to-string
-    "ember help generate | grep -P '      (.*)' | grep -P -o '[a-z\\-]+' | sort | uniq")))
+    (concat ember-command
+            " help generate | grep -P '      (.*)' | grep -P -o '[a-z\\-]+' | sort | uniq"))))
 
 (defun ember--interactive-generator-options
   (&optional supplied-generator supplied-kind destroy-p)
@@ -774,7 +775,7 @@ found by `ember--current-file-components'."
   (interactive (ember--interactive-generator-options nil nil t))
   (let ((default-directory (ember--current-project-root)))
     (let ((response
-           (shell-command-to-string (concat "ember destroy " generator " " kind " " options))))
+           (shell-command-to-string (concat ember-command " destroy " generator " " kind " " options))))
       (message response)
       ;; open the first file that was created
       (find-file (concat default-directory "/"
