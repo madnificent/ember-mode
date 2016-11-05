@@ -658,6 +658,17 @@ the corresponding source."
   (interactive)
   (ember-open-file-by-type "view"))
 
+(defun ember-toggle-addon ()
+  "Toggles between the native view and the ember addon view."
+  (interactive)
+  (cl-destructuring-bind (base-prefix base-class base-type target-kind)
+      (ember--current-file-components)
+    (let ((new-base-prefix (cond ((string= base-prefix "app")
+                                  "addon")
+                                 ((string= base-prefix "addon")
+                                  "app")
+                                 (t (message "Not sure if I'm in app or addon")))))
+      (ember-generic-open-file new-base-prefix base-class base-type target-kind))))
 
 ;;;;;;;;;;;;;;
 ;;; Generators
@@ -1016,6 +1027,7 @@ For example, if you have a project named foo, the paths look like
 (define-key ember-command-prefix (kbd "f i") #'ember-open-initializer)
 (define-key ember-command-prefix (kbd "f u") #'ember-open-util)
 (define-key ember-command-prefix (kbd "f s") #'ember-open-service)
+(define-key ember-command-prefix (kbd "f a") #'ember-toggle-addon)
 
 (define-key ember-command-prefix (kbd "g g") #'ember-generate)
 (define-key ember-command-prefix (kbd "g p") #'ember-generate-component)

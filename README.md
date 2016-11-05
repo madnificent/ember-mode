@@ -91,6 +91,7 @@ Ember-mode will pick up `"usePods": true` when set in `.ember-cli`.  If this is 
     C-c . f i       ember-open-initializer
     C-c . f u       ember-open-util
     C-c . f s       ember-open-service
+    C-c . f a       ember-toggle-addon
 
     C-c . g c       ember-generate-controller
     C-c . g m       ember-generate-model
