@@ -214,41 +214,41 @@ From the string base, a type can be built.")
 (ember--define-matchers no-pod
    ;; BEGIN contains the definition for each matcher
    ;; the first two columns are a regexp, the rest is executed as code
-   ;; base-type  | target-kind | concatenation lambda body                        | override base-type
-   ("router"       ".*"          ("app/router" "." :jsext))
-   ("^route$"      "source"      ("app/routes/" :class "." :jsext)                  "route")
-   ("model"        "source"      ("app/models/" :class "." :jsext))
-   ("view"         "source"      ("app/views/" :class "." :jsext))
-   ("component"    "source"      ("app/components/" :class "." :jsext))
-   ("controller"   "source"      ("app/controllers/" :class "." :jsext))
-   ("mixin"        "source"      ("app/mixins/" :class "." :jsext))
-   ("initializer"  "source"      ("app/initializers/" :class "." :jsext))
-   ("util"         "source"      ("app/utils/" :class "." :jsext))
-   ("service"      "source"      ("app/services/" :class "." :jsext))
-   ("component"    "template"    ("app/templates/components/" :class "." :hbext))
-   ("template"     ".*"          ("app/templates/" :class "." :hbext))
-   (".*"           "template"    ("app/templates/" :class "." :hbext)               "template")
+   ;; base-type  | target-kind | concatenation lambda body                             | override base-type
+   ("router"       ".*"          (:prefix "/router" "." :jsext))
+   ("^route$"      "source"      (:prefix "/routes/" :class "." :jsext)                  "route")
+   ("model"        "source"      (:prefix "/models/" :class "." :jsext))
+   ("view"         "source"      (:prefix "/views/" :class "." :jsext))
+   ("component"    "source"      (:prefix "/components/" :class "." :jsext))
+   ("controller"   "source"      (:prefix "/controllers/" :class "." :jsext))
+   ("mixin"        "source"      (:prefix "/mixins/" :class "." :jsext))
+   ("initializer"  "source"      (:prefix "/initializers/" :class "." :jsext))
+   ("util"         "source"      (:prefix "/utils/" :class "." :jsext))
+   ("service"      "source"      (:prefix "/services/" :class "." :jsext))
+   ("component"    "template"    (:prefix "/templates/components/" :class "." :hbext))
+   ("template"     ".*"          (:prefix "/templates/" :class "." :hbext))
+   (".*"           "template"    (:prefix "/templates/" :class "." :hbext)               "template")
    ;; END contains the definition of each matcher
    )
 
 (ember--define-matchers pod
    ;; BEGIN contains the definition for each matcher
    ;; the first two columns are a regexp, the rest is executed as code
-   ;; base-type  | target-kind | concatenation lambda body                          | override base-type
-   ("router"       ".*"          ("app/router" "." :jsext))
-   ("^route$"      "source"      ("app/" :class "/route" "." :jsext)                  "route")
-   ("model"        "source"      ("app/" :class "/model" "." :jsext))
-   ("view"         "source"      ("app/" :class "/view" "." :jsext))
-   ("controller"   "source"      ("app/" :class "/controller" "." :jsext))
-   ("service"      "source"      ("app/" :class "/service" "." :jsext))
-   ("component"    "source"      ("app/components/" :class "/component" "." :jsext))
-   ("mixin"        "source"      ("app/mixins/" :class "." :jsext))
-   ("initializer"  "source"      ("app/initializers/" :class "." :jsext))
-   ("util"         "source"      ("app/utils/" :class "." :jsext))
-   ("service"      "source"      ("app/services/" :class "." :jsext))
-   ("component"    "template"    ("app/components/" :class "/template" "." :hbext))
-   ("template"     "source"      ("app/" :class "/template" "." :hbext))
-   (".*"           "template"    ("app/" :class "/template" "." :hbext)               "template")
+   ;; base-type  | target-kind | concatenation lambda body                               | override base-type
+   ("router"       ".*"          (:prefix "/router" "." :jsext))
+   ("^route$"      "source"      (:prefix "/" :class "/route" "." :jsext)                  "route")
+   ("model"        "source"      (:prefix "/" :class "/model" "." :jsext))
+   ("view"         "source"      (:prefix "/" :class "/view" "." :jsext))
+   ("controller"   "source"      (:prefix "/" :class "/controller" "." :jsext))
+   ("service"      "source"      (:prefix "/" :class "/service" "." :jsext))
+   ("component"    "source"      (:prefix "/components/" :class "/component" "." :jsext))
+   ("mixin"        "source"      (:prefix "/mixins/" :class "." :jsext))
+   ("initializer"  "source"      (:prefix "/initializers/" :class "." :jsext))
+   ("util"         "source"      (:prefix "/utils/" :class "." :jsext))
+   ("service"      "source"      (:prefix "/services/" :class "." :jsext))
+   ("component"    "template"    (:prefix "/components/" :class "/template" "." :hbext))
+   ("template"     "source"      (:prefix "/" :class "/template" "." :hbext))
+   (".*"           "template"    (:prefix "/" :class "/template" "." :hbext)               "template")
    ;; END contains the definition of each matcher
    )
 
@@ -261,8 +261,9 @@ POD setting."
   "Fills in the parts of MATCHER-TEMPLATE which could be filled in
 with the supplied OPTIONS.
 
-OPTIONS is expected to be a plist containing the keywords
-:extension and :class if they are available."
+OPTIONS is expected to be a plist containing the keywords in which
+the :prefix keyword is required and :extension and :class are
+optional."
   (cl-loop for item in matcher-template
         for substitution = (cl-getf options item)
         if substitution
@@ -274,8 +275,8 @@ OPTIONS is expected to be a plist containing the keywords
   "Constructs the relative path for MATCHER-TEMPLATE, given the
 options in OPTIONS.
 
-OPTIONS should be an alist containing the keywords :CLASS and
-:EXTENSION.  Some matchers may not require both to be supplied."
+OPTIONS should be an alist containing the keywords :PREFIX, :CLASS
+and :EXTENSION.  Some matchers may not require all to be supplied."
   (apply #'concat
          (cl-loop for item in
                (apply #'ember--matcher-partial-fill matcher-template options)
@@ -327,6 +328,11 @@ the matcher-template"
                (ember--matcher-partial-fill matcher-template :hbext ext)))
         (t (list matcher-template))))
 
+(defun ember--matcher-template-map-prefixes (matcher-template)
+  "Returns a new matcher-template for each prefix"
+  (list (ember--matcher-partial-fill matcher-template :prefix "app")
+        (ember--matcher-partial-fill matcher-template :prefix "addon")))
+
 (defun ember--regex-escape-matcher-template (matcher-template)
   "Returns the same matcher but in which the components can be used in
 a regular expression.  The most common regex patterns will have been
@@ -352,10 +358,16 @@ template to their corresponding values in RELATIVE-PATH."
                                    if (symbolp component)
                                    collect component)))
       (let ((template-regex
-             (apply #'ember--matcher-relative-path
-                    (ember--regex-escape-matcher-template matcher-template)
-                    (cl-loop for symbol in component-symbols append
-                          (list symbol "\\(.+\\)")))))
+             (concat
+              "^"
+              (apply #'ember--matcher-relative-path
+                     (ember--regex-escape-matcher-template matcher-template)
+                     (cl-loop for symbol in component-symbols append
+                              (let ((regex (if (eq symbol :class)
+                                               "\\(.+\\)"
+                                               "\\([^/]+\\)")))
+                                (list symbol regex))))
+              "$")))
         (save-match-data
           (when (string-match template-regex relative-path)
             (cl-loop for component-symbol in component-symbols
@@ -363,7 +375,7 @@ template to their corresponding values in RELATIVE-PATH."
                   append
                   (list component-symbol (match-string index relative-path)))))))))
 
-(defun ember--relative-ember-source-path (base-class base-type target-kind)
+(defun ember--relative-ember-source-path (base-prefix base-class base-type target-kind)
   "Supplies a list of plausible paths to an ember source file given
 its core components.  The paths are returned as a list of strings,
 starting from the app's root.
@@ -408,6 +420,7 @@ Sources are specified in ember by a few orthogonal factors:
       (mapcar #'ember--matcher-relative-path
               (ember--matcher-template-map-extensions
                (ember--matcher-partial-fill (cl-first templates)
+                                            :prefix base-prefix
                                             :class base-class
                                             :base-type base-type
                                             :target-kind target-kind))))))
@@ -438,12 +451,13 @@ file."
       (cl-destructuring-bind (components matcher) components-and-matcher
         (let ((base-class (cl-getf components :class))
               (base-type  (cl-fourth matcher))
+              (base-prefix (cl-getf components :prefix))
               (target-kind (cond
                             ((cl-find (cl-getf components :jsext) ember-script-file-types :test #'equal)
                              "source")
                             ((cl-find (cl-getf components :hbext) ember-template-file-types :test #'equal)
                              "template"))))
-          (list base-class base-type target-kind))))))
+          (list base-prefix base-class base-type target-kind))))))
 
 (defun ember--file-relative-to-root (file)
   "Returns the pathname of FILE relative to the current project's
@@ -455,7 +469,7 @@ root."
 ember source file."
   (or (ember--relative-file-components
        (ember--file-relative-to-root (or load-file-name buffer-file-name default-directory)))
-      (list nil nil nil)))
+      (list nil nil nil nil)))
 
 (cl-defun ember-open-file-by-type (type &optional (assume-js t))
   "Opens an ember file for TYPE with all base values assumed from
@@ -463,23 +477,23 @@ the currently open file.
 
 ASSUME-JS is an override.  If this is true, it is assumed that a
 javascript (or coffeescript) source file should be opened."
-  (cl-destructuring-bind (base-class base-type target-kind)
+  (cl-destructuring-bind (base-prefix base-class base-type target-kind)
       (ember--current-file-components)
     (let ((new-target-kind (if assume-js "source" target-kind)))
       (if (and (equal type base-type)
                (equal target-kind new-target-kind))
           (ember--select-file-by-type-and-kind (concat "Open " type ": ") base-type new-target-kind)
-        (ember-generic-open-file base-class type new-target-kind)))))
+        (ember-generic-open-file base-prefix base-class type new-target-kind)))))
 
 (defun ember-open-file-by-kind (kind)
   "Opens an ember file for KIND.
 
 Kind should be one of \"template\" or \"source\"."
-  (cl-destructuring-bind (base-class base-type target-kind)
+  (cl-destructuring-bind (base-prefix base-class base-type target-kind)
       (ember--current-file-components)
     (if (equal kind target-kind)
         (ember--select-file-by-type-and-kind (concat "Open " base-type ": ") base-type kind)
-      (ember-generic-open-file base-class base-type kind))))
+      (ember-generic-open-file base-prefix base-class base-type kind))))
 
 (defun ember--get-matcher-template (matcher)
   "Returns the matcher template for MATCHER."
@@ -498,7 +512,10 @@ files and directories that match IGNORE (IGNORE is tested before
 MATCH. Recurse only to depth MAXDEPTH. Does not recurse if
 MAXDEPTH is zero or negative."
   (let ((matchers (ember--matchers-for base-type target-kind))
-        (walk-dirs (list (concat (ember--current-project-root) "app")))
+        (walk-dirs (cl-loop for prefix in '("app" "addon")
+                            for dir = (concat (ember--current-project-root) prefix)
+                            if (file-directory-p dir)
+                            collect dir))
         matching-files)
     (cl-flet ((walk-directory
                (dir)
@@ -554,7 +571,7 @@ This replacement uses a completion system according to
       (when relative-file
         (find-file (concat (ember--current-project-root) relative-file))))))
 
-(defun ember-generic-open-file (base-class base-type target-kind)
+(defun ember-generic-open-file (base-prefix base-class base-type target-kind)
   "Tries to open the ember file specified by BASE-CLASS, BASE-TYPE and TARGET-KIND.
 If no such file was found, it tries to find related files or
 requests the user if the file should be created."
@@ -564,14 +581,14 @@ requests the user if the file should be created."
         (file-list
          ;; pick the files and their alternatives, so we have a good list
          ;; to search for an existing file.
-         (append (ember--relative-ember-source-path base-class base-type target-kind)
-                 (ember--relative-ember-source-path (ember--pluralize-noun base-class) base-type target-kind)
-                 (ember--relative-ember-source-path (ember--singularize-noun base-class) base-type target-kind))))
+         (append (ember--relative-ember-source-path base-prefix base-class base-type target-kind)
+                 (ember--relative-ember-source-path base-prefix (ember--pluralize-noun base-class) base-type target-kind)
+                 (ember--relative-ember-source-path base-prefix (ember--singularize-noun base-class) base-type target-kind))))
     (cl-block found-file
       (cl-loop for relative-file in file-list
-            for absolute-file = (concat ember-root relative-file)
-            if (file-exists-p absolute-file)
-            do
+               for absolute-file = (concat ember-root relative-file)
+               if (file-exists-p absolute-file)
+               do
                (find-file absolute-file)
                (cl-return-from found-file absolute-file))
       (when (string= target-kind "template")
@@ -654,12 +671,12 @@ the corresponding source."
   "Runs an ember generator."
   (interactive (ember--interactive-generator-options))
   (let ((default-directory (ember--current-project-root)))
-    (let ((response
-           (shell-command-to-string (concat ember-command " generate " generator " " kind " " options))))
-      (message response)
-      ;; open the first file that was created
-      (find-file (concat default-directory "/"
-                         (ember--match-by-index "\s+create\s+\\(.*\\)" response 1))))))
+    (let ((command (concat ember-command " generate " generator " " kind " " options)))
+      (let ((response (shell-command-to-string command)))
+        (message response)
+        ;; open the first file that was created
+        (find-file (concat default-directory "/"
+                           (ember--match-by-index "\s+create\s+\\(.*\\)" response 1)))))))
 
 (defun ember-generate-controller (kind options)
   "Generates a controller."
@@ -739,11 +756,11 @@ or if the user has supplied a prefix-argument.  In the case of a
 prefix argument all values not supplied by SUPPLIED-GENERATOR or
 SUPPLIED-KIND will be queried with the default being the value
 found by `ember--current-file-components'."
-  (cl-destructuring-bind (current-base-class current-base-kind current-target-kind)
+  (cl-destructuring-bind (current-base-prefix current-base-class current-base-kind current-target-kind)
       ;; fetch current values from current-file-components
       (condition-case err
           (ember--current-file-components)
-        ('error (list nil nil nil)))
+        ('error (list nil nil nil nil)))
     ;; ask the user to override
     (cl-destructuring-bind (new-generator new-kind new-options)
         (if current-prefix-arg
