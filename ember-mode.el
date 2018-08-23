@@ -744,7 +744,7 @@ the corresponding source."
   (split-string
    (shell-command-to-string
     (concat ember-command
-            " help generate | grep -P '      (.*)' | grep -P -o '[a-z\\-]+' | sort | uniq"))))
+            " help generate | grep -o -E -e '^      ([^ ]+)' | grep -E -o -e '[a-z\\-]+' | sort | uniq"))))
 
 (defun ember--interactive-generator-options
   (&optional supplied-generator supplied-kind destroy-p)
@@ -1428,6 +1428,35 @@ For example, if you have a project named foo, the paths look like
                           (- (length found-symbol)))))
         (message (concat "no match found (matched symbol is " found-symbol ")"))))))
 
+(defun ember-import-from-ember-at-point ()
+  "Automatically imports based on standard naming."
+  (interactive)
+  ;; get the symbol
+  (let* ((js-symbol-info (ember--get-js-symbol-at-point))
+         (found-symbol (cl-first js-symbol-info))
+         (start (cl-second js-symbol-info))
+         (current-point (point)))
+    ;; find the corresponding symbol in our known map
+    (let ((match-properties (cl-find found-symbol *ember--core-importer-matches*
+                                     :key #'cl-second :test #'string=)))
+      (if match-properties
+          (let ((injection (cl-third match-properties))
+                needs-injection-p)
+            ;; we have a solution
+            (goto-char 0)
+            ;; check if import is already present
+            (if (search-forward injection nil t)
+                (setf needs-injection-p nil)
+              (setf needs-injection-p t))
+            ;; inject content
+            (if needs-injection-p
+                (insert injection "\n"))
+            ;; move the cursor to the desired position
+            (goto-char (+ current-point
+                          (if needs-injection-p (+ (length injection) 1) 0))))
+        ;; we found no solution
+        (message "Did not find import for symbol at point")))))
+
 
 ;;;;;;;;;;;;;;;
 ;;; Keybindings
@@ -1480,6 +1509,7 @@ For example, if you have a project named foo, the paths look like
 (define-key ember-command-prefix (kbd "r t") 'ember-test)
 
 (define-key ember-command-prefix (kbd "i u") 'ember-import-upgrade-import-statement-at-point)
+(define-key ember-command-prefix (kbd "i e") 'ember-import-from-ember-at-point)
 
 (fset 'ember-command-prefix ember-command-prefix)
 

@@ -76,6 +76,12 @@ Ember-mode is shipped with basic support for the POD structure.  Navigation supp
 
 Ember-mode will pick up `"usePods": true` when set in `.ember-cli`.  If this is set, navigation occurs assuming a POD structure.  See the installation section for more information on overriding the detection of a POD enabled project.
 
+### bonus features ###
+
+ember-mode also supports managing bare-bones imports.  If you need to import computed from the ember package, you can just write `computed` and execute the `C-c . i e` to import computed from the correct package.  This works for other imports too.
+
+If you have code which uses the old style `Ember.computed`.  It can help you upgrade an import statement from it's `Ember.something` form to its new form.  Move your cursor on `Ember.computed` and execute `C-c . i u`.
+
 
 ### published bindings ###
 
@@ -122,6 +128,9 @@ Ember-mode will pick up `"usePods": true` when set in `.ember-cli`.  If this is 
     C-c . r b       ember-build
     C-c . r s       ember-serve-or-display
     C-c . r t       ember-test
+        
+    C-c . i u       ember-import-upgrade-import-statement-at-point
+    C-c . i e       ember-import-from-ember-at-point
 
 If you wish to use a different prefix other than `C-c .`, you may
 customize the variable `ember-keymap-prefix` with `M-x
