@@ -433,7 +433,7 @@ Sources are specified in ember by a few orthogonal factors:
   (ember--file-project-root (or load-file-name buffer-file-name default-directory)))
 
 (defun ember--file-project-root (file)
-  (locate-dominating-file file ".git"))
+  (locate-dominating-file file ".ember-cli"))
 
 (defun ember--relative-file-components (file)
   "Returns a list containing the components which make up this ember source
@@ -1387,7 +1387,7 @@ For example, if you have a project named foo, the paths look like
            (butlast components))))))
 
 (defun ember--find-match-for-statement (string)
-  "Searches for a matching symbol in 
+  "Searches for a matching symbol in
    *ember--core-importer-matches*"
   (ember--find-recursive-match-for-import-statement
    (split-string string "\\.")))
