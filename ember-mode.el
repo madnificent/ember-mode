@@ -66,6 +66,26 @@
   :prefix "ember-"
   :group 'tools)
 
+;;;;;;;;;;;;;;;;;;;
+;;;; Debug printing
+
+(defvar ember--debug-ember-mode nil)
+
+(defvar ember--debug-output-buffer (generate-new-buffer "*ember-mode-debug*"))
+
+(defun ember--debug-princ (&rest args)
+  "Prints content to the ember debug output using princ"
+  (when ember--debug-ember-mode
+    (princ args ember--debug-output-buffer)
+    (princ "\n" ember--debug-output-buffer)))
+
+(defun ember--debug-print (&rest args)
+  "Prints content to the ember debug output using print"
+  (when ember--debug-ember-mode
+    (print args ember--debug-output-buffer)))
+
+(ember--debug-princ "*This buffer contains debug s-expressions from ember-mode*")
+
 ;;;;;;;;;;;;
 ;;;; plurals
 ;;
@@ -159,25 +179,41 @@ The first item in this list is used as the 'default', used when creating files."
 (defvar ember-use-pods 'unset
   "Default to not using the POD structure for now.")
 
-(defun ember--get-matcher-map-name ()
-  "Returns the name of the map for the current matcher.
-
-Returns either 'pod and 'no-pod."
-  (cond
-    ((eq ember-use-pods t) 'pod)
-    ((eq ember-use-pods nil) 'no-pod)
-    (t (if (ember--dot-ember-cli-has-pods-p)
-           'pod 'no-pod))))
-
 (defun ember--dot-ember-cli-has-pods-p ()
   "Returns non-nil iff the .ember-cli file in the root sets
 usePods to true.  Very basic detection is performed to see if the
 line with usePods is commented out."
   (let ((ember-cli-filename (concat (ember--current-project-root)
                                     "/.ember-cli")))
-    (with-temp-buffer
-      (insert-file-contents ember-cli-filename)
-      (re-search-forward "^[^/]*\"usePods\".*:.*true" nil t))))
+    (when (file-exists-p ember-cli-filename)
+      (with-temp-buffer
+        (insert-file-contents ember-cli-filename)
+        (re-search-forward "^[^/]*\"usePods\".*:.*true" nil t)))))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;
+;;; MU structure support
+
+(defvar ember-use-mu 'unset
+  "Defaults to not using the MU structure for now.")
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Shared support for MU and PODs
+
+(defun ember--get-matcher-map-name ()
+  "Returns the name of the map for the current matcher.
+
+Returns either 'pod and 'no-pod."
+  (cond
+    ((eq ember-use-mu t) 'mu)
+    ((eq ember-use-pods t) 'pod)
+    ((eq ember-use-pods nil) 'no-pod)
+    (t (if (ember--dot-ember-cli-has-pods-p)
+           'pod 'no-pod))))
+
+(defun base-prefixes ()
+  '("app" "src" "addon"))
 
 ;;;;;;;;;;;;;;
 ;;; Navigation
@@ -196,6 +232,8 @@ contain parens, `ember--relative-file-components' makes use of this
 assumption.
 
 From the string base, a type can be built.")
+
+(setf *ember--matcher-templates* (make-hash-table))
 
 (cl-defun ember--define-matcher (map-name base-type-regex target-kind base-location &optional (base-type base-type-regex))
   "Adds a matcher to the end of the list of *EMBER--MATCHER-TEMPLATES* for map-name"
@@ -249,6 +287,26 @@ From the string base, a type can be built.")
    ("component"    "template"    (:prefix "/components/" :class "/template" "." :hbext))
    ("template"     "source"      (:prefix "/" :class "/template" "." :hbext))
    (".*"           "template"    (:prefix "/" :class "/template" "." :hbext)               "template")
+   ;; END contains the definition of each matcher
+   )
+
+(ember--define-matchers mu
+   ;; BEGIN contains the definition for each matcher
+   ;; the first two columns are a regexp, the rest is executed as code
+   ;; base-type  | target-kind | concatenation lambda body                               | override base-type
+   ("router"       ".*"          (:prefix "/router" "." :jsext))
+   ("^route$"      "source"      (:prefix "/ui/routes/" :class "/route" "." :jsext)                  "route")
+   ("model"        "source"      (:prefix "/data/models/" :class "/model" "." :jsext))
+   ("controller"   "source"      (:prefix "/controllers/" :class "." :jsext))
+   ("service"      "source"      (:prefix "/services/" :class "." :jsext))
+   ("component"    "source"      (:prefix "/ui/components/" :class "/component" "." :jsext))
+   ("mixin"        "source"      (:prefix "/mixins/" :class "." :jsext))
+   ("initializer"  "source"      (:prefix "/init/initializers/" :class "." :jsext))
+   ("util"         "source"      (:prefix "/utils/" :class "." :jsext))
+   ("service"      "source"      (:prefix "/services/" :class "." :jsext))
+   ("component"    "template"    (:prefix "/ui/components/" :class "/template" "." :hbext))
+   ("template"     "source"      (:prefix "/ui/routes/" :class "/template" "." :hbext))
+   (".*"           "template"    (:prefix "/ui/routes/" :class "/template" "." :hbext)               "template")
    ;; END contains the definition of each matcher
    )
 
@@ -331,7 +389,8 @@ the matcher-template"
 (defun ember--matcher-template-map-prefixes (matcher-template)
   "Returns a new matcher-template for each prefix"
   (list (ember--matcher-partial-fill matcher-template :prefix "app")
-        (ember--matcher-partial-fill matcher-template :prefix "addon")))
+        (ember--matcher-partial-fill matcher-template :prefix "addon")
+        (ember--matcher-partial-fill matcher-template :prefix "src")))
 
 (defun ember--regex-escape-matcher-template (matcher-template)
   "Returns the same matcher but in which the components can be used in
@@ -457,7 +516,8 @@ file."
                              "source")
                             ((cl-find (cl-getf components :hbext) ember-template-file-types :test #'equal)
                              "template"))))
-          (list base-prefix base-class base-type target-kind))))))
+          (let ((response (list base-prefix base-class base-type target-kind)))
+            response))))))
 
 (defun ember--file-relative-to-root (file)
   "Returns the pathname of FILE relative to the current project's
@@ -468,8 +528,8 @@ root."
   "Returns a list containing the components which make up this
 ember source file."
   (or (ember--relative-file-components
-       (ember--file-relative-to-root (or load-file-name buffer-file-name default-directory)))
-      (list nil nil nil nil)))
+      (ember--file-relative-to-root (or load-file-name buffer-file-name default-directory)))
+     (list nil nil nil nil)))
 
 (cl-defun ember-open-file-by-type (type &optional (assume-js t))
   "Opens an ember file for TYPE with all base values assumed from
@@ -512,7 +572,7 @@ files and directories that match IGNORE (IGNORE is tested before
 MATCH. Recurse only to depth MAXDEPTH. Does not recurse if
 MAXDEPTH is zero or negative."
   (let ((matchers (ember--matchers-for base-type target-kind))
-        (walk-dirs (cl-loop for prefix in '("app" "addon")
+        (walk-dirs (cl-loop for prefix in '("app" "addon" "src")
                             for dir = (concat (ember--current-project-root) prefix)
                             if (file-directory-p dir)
                             collect dir))
@@ -575,25 +635,33 @@ This replacement uses a completion system according to
   "Tries to open the ember file specified by BASE-CLASS, BASE-TYPE and TARGET-KIND.
 If no such file was found, it tries to find related files or
 requests the user if the file should be created."
-  (unless base-class
-    (setf base-class ""))
-  (let ((ember-root (ember--current-project-root))
-        (file-list
-         ;; pick the files and their alternatives, so we have a good list
-         ;; to search for an existing file.
-         (append (ember--relative-ember-source-path base-prefix base-class base-type target-kind)
-                 (ember--relative-ember-source-path base-prefix (ember--pluralize-noun base-class) base-type target-kind)
-                 (ember--relative-ember-source-path base-prefix (ember--singularize-noun base-class) base-type target-kind))))
-    (cl-block found-file
-      (cl-loop for relative-file in file-list
-               for absolute-file = (concat ember-root relative-file)
-               if (file-exists-p absolute-file)
-               do
-               (find-file absolute-file)
-               (cl-return-from found-file absolute-file))
-      (when (string= target-kind "template")
-        (setf base-type "template"))
-      (ember--select-file-by-type-and-kind "Not found, alternatives: " base-type target-kind))))
+  (let ((prefix-list
+         (cond ((equal base-prefix "src")
+                '("src" "app"))
+               ((and (equal base-prefix "app") ember-use-mu)
+                '("app" "src"))
+               (t
+                (list base-prefix)))))
+    (unless base-class
+      (setf base-class ""))
+    (let ((ember-root (ember--current-project-root))
+          (file-list
+           ;; pick the files and their alternatives, so we have a good list
+           ;; to search for an existing file.
+           (cl-loop for prefix in prefix-list append
+                    (append (ember--relative-ember-source-path prefix base-class base-type target-kind)
+                            (ember--relative-ember-source-path prefix (ember--pluralize-noun base-class) base-type target-kind)
+                            (ember--relative-ember-source-path prefix (ember--singularize-noun base-class) base-type target-kind)))))
+      (cl-block found-file
+        (cl-loop for relative-file in file-list
+                 for absolute-file = (concat ember-root relative-file)
+                 if (file-exists-p absolute-file)
+                 do
+                 (find-file absolute-file)
+                 (cl-return-from found-file absolute-file))
+        (when (string= target-kind "template")
+          (setf base-type "template"))
+        (ember--select-file-by-type-and-kind "Not found, alternatives: " base-type target-kind)))))
 
 (defun ember-open-component ()
   "Opens a component file based on the currently opened file."
@@ -661,6 +729,7 @@ the corresponding source."
 (defun ember-toggle-addon ()
   "Toggles between the native view and the ember addon view."
   (interactive)
+  ;; TODO fix for mu
   (cl-destructuring-bind (base-prefix base-class base-type target-kind)
       (ember--current-file-components)
     (let ((new-base-prefix (cond ((string= base-prefix "app")
