@@ -492,7 +492,8 @@ Sources are specified in ember by a few orthogonal factors:
   (ember--file-project-root (or load-file-name buffer-file-name default-directory)))
 
 (defun ember--file-project-root (file)
-  (locate-dominating-file file ".ember-cli"))
+  (or (locate-dominating-file file ".ember-cli")
+     (locate-dominating-file file ".ember-cli.js")))
 
 (defun ember--relative-file-components (file)
   "Returns a list containing the components which make up this ember source
