@@ -197,6 +197,23 @@ line with usePods is commented out."
 (defvar ember-use-mu 'unset
   "Defaults to not using the MU structure for now.")
 
+(defun ember--dot-ember-cli-has-mu-p ()
+  "Returns non-nil iff the .ember-cli file in the root sets
+usePods to true.  Very basic detection is performed to see if the
+line with usePods is commented out."
+  (let ((ember-cli-filename (concat (ember--current-project-root)
+                                    "/.ember-cli.js")))
+    (when (file-exists-p ember-cli-filename)
+      (with-temp-buffer
+        (insert-file-contents ember-cli-filename)
+        (re-search-forward ".*EMBER_CLI_MODULE_UNIFICATION.*true.*" nil t)))))
+
+(defun ember--has-mu-p ()
+  "Returns t iff mu is enabled"
+  (interactive)
+  (message (if ember-use-mu "mu use flag on" "mu use flag off"))
+  (message (if (ember--dot-ember-cli-has-mu-p) "mu in .ember-cli.js" "mu not in .ember-cli.js"))
+  (or ember-use-mu (ember--dot-ember-cli-has-mu-p)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Shared support for MU and PODs
@@ -209,8 +226,9 @@ Returns either 'pod and 'no-pod."
     ((eq ember-use-mu t) 'mu)
     ((eq ember-use-pods t) 'pod)
     ((eq ember-use-pods nil) 'no-pod)
-    (t (if (ember--dot-ember-cli-has-pods-p)
-           'pod 'no-pod))))
+    (t (cond ((ember--dot-ember-cli-has-mu-p) 'mu)
+             ((ember--dot-ember-cli-has-pods-p) 'pod)
+             (t 'no-pod)))))
 
 (defun base-prefixes ()
   '("app" "src" "addon"))
@@ -493,7 +511,8 @@ Sources are specified in ember by a few orthogonal factors:
 
 (defun ember--file-project-root (file)
   (or (locate-dominating-file file ".ember-cli")
-     (locate-dominating-file file ".ember-cli.js")))
+     (locate-dominating-file file ".ember-cli.js")
+     (locate-dominating-file file "ember-cli-build.js")))
 
 (defun ember--relative-file-components (file)
   "Returns a list containing the components which make up this ember source
@@ -552,6 +571,7 @@ javascript (or coffeescript) source file should be opened."
 Kind should be one of \"template\" or \"source\"."
   (cl-destructuring-bind (base-prefix base-class base-type target-kind)
       (ember--current-file-components)
+    (message "%s" (list base-prefix base-class base-type target-kind))
     (if (equal kind target-kind)
         (ember--select-file-by-type-and-kind (concat "Open " base-type ": ") base-type kind)
       (ember-generic-open-file base-prefix base-class base-type kind))))
@@ -639,7 +659,7 @@ requests the user if the file should be created."
   (let ((prefix-list
          (cond ((equal base-prefix "src")
                 '("src" "app"))
-               ((and (equal base-prefix "app") ember-use-mu)
+               ((and (equal base-prefix "app") (ember--has-mu-p))
                 '("app" "src"))
                (t
                 (list base-prefix)))))
@@ -753,6 +773,7 @@ the corresponding source."
   (interactive (ember--interactive-generator-options))
   (let ((default-directory (ember--current-project-root)))
     (let ((command (concat ember-command " generate " generator " " kind " " options)))
+      (message command)
       (let ((response (shell-command-to-string command)))
         (message response)
         ;; open the first file that was created
@@ -1432,6 +1453,19 @@ For example, if you have a project named foo, the paths look like
     ("Ember.Instrumentation.unsubscribe" "unsubscribe" "import { unsubscribe } from '@ember/instrumentation';")
     ("Ember.warn" "warn" "import { warn } from '@ember/debug';")))
 
+(defvar *ember--decorator-importer-matches*
+  '(("tagName" "import { tagName } from '@ember/component';")
+    ("attr" "import { attr } from '@ember/data';")
+    ("belongsTo" "import { belongsTo } from '@ember/data';")
+    ("hasMany" "import { hasMany } from '@ember/data';")
+    ("action" "import { action } from '@ember/object';")
+    ("computed" "import { computed } from '@ember/object';")
+    ("filterBy" "import { filterBy } from '@ember/object/computed';")
+    ("sort" "import { sort } from '@ember/object/computed';")
+    ("service" "import { inject as service } from '@ember/service';")
+    ("tracked" "import { tracked } from '@glimmer/tracking';")
+    ("task" "import { task } from 'ember-concurrency-decorators';")))
+
 (defun ember--get-js-symbol-at-point ()
   "Returns the javascript symbol at the current point,
    the start, and the end location."
@@ -1527,6 +1561,34 @@ For example, if you have a project named foo, the paths look like
         ;; we found no solution
         (message "Did not find import for symbol at point")))))
 
+(defun ember-import-decorator-at-point ()
+  "Automatically imports based on standard naming."
+  (interactive)
+  ;; get the symbol
+  (let* ((js-symbol-info (ember--get-js-symbol-at-point))
+         (found-symbol (cl-first js-symbol-info))
+         (current-point (point)))
+    ;; find the corresponding symbol in our known map
+    (let ((match-properties (cl-find found-symbol *ember--decorator-importer-matches*
+                                     :key #'cl-first :test #'string=)))
+      (if match-properties
+          (let ((injection (cl-second match-properties))
+                needs-injection-p)
+            ;; we have a solution
+            (goto-char 0)
+            ;; check if import is already present
+            (if (search-forward injection nil t)
+                (setf needs-injection-p nil)
+              (setf needs-injection-p t))
+            ;; inject content
+            (if needs-injection-p
+                (insert injection "\n"))
+            ;; move the cursor to the desired position
+            (goto-char (+ current-point
+                          (if needs-injection-p (+ (length injection) 1) 0))))
+        ;; we found no solution
+        (message (concat "no match found (matched symbol is " found-symbol ")"))))))
+
 
 ;;;;;;;;;;;;;;;
 ;;; Keybindings
@@ -1580,6 +1642,7 @@ For example, if you have a project named foo, the paths look like
 
 (define-key ember-command-prefix (kbd "i u") 'ember-import-upgrade-import-statement-at-point)
 (define-key ember-command-prefix (kbd "i e") 'ember-import-from-ember-at-point)
+(define-key ember-command-prefix (kbd "i d") 'ember-import-decorator-at-point)
 
 (fset 'ember-command-prefix ember-command-prefix)
 

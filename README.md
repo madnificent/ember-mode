@@ -78,7 +78,7 @@ Ember-mode will pick up `"usePods": true` when set in `.ember-cli`.  If this is 
 
 ### bonus features ###
 
-ember-mode also supports managing bare-bones imports.  If you need to import computed from the ember package, you can just write `computed` and execute the `C-c . i e` to import computed from the correct package.  This works for other imports too.
+ember-mode also supports managing bare-bones imports.  If you need to import computed from the ember package, you can just write `computed` and execute the `C-c . i e` to import computed from the correct package.  This works for other imports too.  If you need to import decorators, many can be accessed through `C-c . i d` when on the symbol.
 
 If you have code which uses the old style `Ember.computed`.  It can help you upgrade an import statement from it's `Ember.something` form to its new form.  Move your cursor on `Ember.computed` and execute `C-c . i u`.
 
@@ -131,6 +131,7 @@ If you have code which uses the old style `Ember.computed`.  It can help you upg
         
     C-c . i u       ember-import-upgrade-import-statement-at-point
     C-c . i e       ember-import-from-ember-at-point
+    C-c . i d       ember-import-decorator-at-point
 
 If you wish to use a different prefix other than `C-c .`, you may
 customize the variable `ember-keymap-prefix` with `M-x
