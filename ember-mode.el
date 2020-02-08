@@ -86,6 +86,15 @@
 
 (ember--debug-princ "*This buffer contains debug s-expressions from ember-mode*")
 
+;;;;;;;;;;;;;;;;;;
+;;;; Opening files
+
+(defun ember--find-file (path)
+  "Opens the supplied file and pushes the current location on the xref marker stack if there is support"
+  (when (functionp #'xref-push-marker-stack)
+    (xref-push-marker-stack))
+  (find-file path))
+
 ;;;;;;;;;;;;
 ;;;; plurals
 ;;
@@ -653,7 +662,7 @@ This replacement uses a completion system according to
   (let ((potential-matches (ember--list-files-by-type-and-kind base-type target-kind)))
     (let ((relative-file (ember--completing-read question potential-matches)))
       (when relative-file
-        (find-file (concat (ember--current-project-root) relative-file))))))
+        (ember--find-file (concat (ember--current-project-root) relative-file))))))
 
 (defun ember-generic-open-file (base-prefix base-class base-type target-kind)
   "Tries to open the ember file specified by BASE-CLASS, BASE-TYPE and TARGET-KIND.
@@ -681,7 +690,7 @@ requests the user if the file should be created."
                  for absolute-file = (concat ember-root relative-file)
                  if (file-exists-p absolute-file)
                  do
-                 (find-file absolute-file)
+                 (ember--find-file absolute-file)
                  (cl-return-from found-file absolute-file))
         (when (string= target-kind "template")
           (setf base-type "template"))
@@ -780,8 +789,8 @@ the corresponding source."
       (let ((response (shell-command-to-string command)))
         (message response)
         ;; open the first file that was created
-        (find-file (concat default-directory "/"
-                           (ember--match-by-index "\s+create\s+\\(.*\\)" response 1)))))))
+        (ember--find-file (concat default-directory "/"
+                                  (ember--match-by-index "\s+create\s+\\(.*\\)" response 1)))))))
 
 (defun ember-generate-controller (kind options)
   "Generates a controller."
@@ -900,8 +909,8 @@ found by `ember--current-file-components'."
            (shell-command-to-string (concat ember-command " destroy " generator " " kind " " options))))
       (message response)
       ;; open the first file that was created
-      (find-file (concat default-directory "/"
-                         (ember--match-by-index "\s+create\s+\\(.*\\)" response 1))))))
+      (ember--find-file (concat default-directory "/"
+                                (ember--match-by-index "\s+create\s+\\(.*\\)" response 1))))))
 
 (defun ember-destroy-controller (kind options)
   "Destroys a controller."
