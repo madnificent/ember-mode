@@ -213,9 +213,13 @@ line with usePods is commented out."
   (let ((ember-cli-filename (concat (ember--current-project-root)
                                     "/.ember-cli.js")))
     (when (file-exists-p ember-cli-filename)
-      (with-temp-buffer
-        (insert-file-contents ember-cli-filename)
-        (re-search-forward ".*EMBER_CLI_MODULE_UNIFICATION.*true.*" nil t)))))
+      (or
+       (with-temp-buffer
+         (insert-file-contents ember-cli-filename)
+         (re-search-forward ".*EMBER_CLI_MODULE_UNIFICATION.*true.*" nil t))
+       (with-temp-buffer
+         (insert-file-contents ember-cli-filename)
+         (re-search-forward "\\s*setEdition([\\s'\"]*octane[\\s'\"]*)" nil t))))))
 
 (defun ember--has-mu-p ()
   "Returns t iff mu is enabled"
