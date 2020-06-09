@@ -289,6 +289,7 @@ From the string base, a type can be built.")
    ("mixin"        "source"      (:prefix "/mixins/" :class "." :jsext))
    ("initializer"  "source"      (:prefix "/initializers/" :class "." :jsext))
    ("util"         "source"      (:prefix "/utils/" :class "." :jsext))
+   ("helper"       "source"      (:prefix "/helpers/" :class "." :jsext))
    ("service"      "source"      (:prefix "/services/" :class "." :jsext))
    ("component"    "template"    (:prefix "/templates/components/" :class "." :hbext))
    ("component"    "template"    (:prefix "/components/" :class "." :hbext))
@@ -311,6 +312,7 @@ From the string base, a type can be built.")
    ("mixin"        "source"      (:prefix "/mixins/" :class "." :jsext))
    ("initializer"  "source"      (:prefix "/initializers/" :class "." :jsext))
    ("util"         "source"      (:prefix "/utils/" :class "." :jsext))
+   ("helper"       "source"      (:prefix "/helpers/" :class "." :jsext))
    ("service"      "source"      (:prefix "/services/" :class "." :jsext))
    ("component"    "template"    (:prefix "/components/" :class "/template" "." :hbext))
    ("template"     "source"      (:prefix "/" :class "/template" "." :hbext))
@@ -331,6 +333,7 @@ From the string base, a type can be built.")
    ("mixin"        "source"      (:prefix "/mixins/" :class "." :jsext))
    ("initializer"  "source"      (:prefix "/init/initializers/" :class "." :jsext))
    ("util"         "source"      (:prefix "/utils/" :class "." :jsext))
+   ("helper"       "source"      (:prefix "/helpers/" :class "." :jsext))
    ("service"      "source"      (:prefix "/services/" :class "." :jsext))
    ("component"    "template"    (:prefix "/ui/components/" :class "/template" "." :hbext))
    ("template"     "source"      (:prefix "/ui/routes/" :class "/template" "." :hbext))
@@ -736,6 +739,11 @@ requests the user if the file should be created."
   (interactive)
   (ember-open-file-by-type "util"))
 
+(defun ember-open-helper ()
+  "Opens an ember Helper file based on the currently opened file."
+  (interactive)
+  (ember-open-file-by-type "helper"))
+
 (defun ember-open-service ()
   "Opens an ember Service file based on the currently opened file."
   (interactive)
@@ -826,6 +834,11 @@ the corresponding source."
   "Generates a utility."
   (interactive (ember--interactive-generator-options "util"))
   (ember-generate "util" kind options))
+
+(defun ember-generate-helper (kind options)
+  "Generates a helper."
+  (interactive (ember--interactive-generator-options "helper"))
+  (ember-generate "helper" kind options))
 
 (defun ember-generate-service (kind options)
   "Generates a service."
@@ -946,6 +959,11 @@ found by `ember--current-file-components'."
   "Destroys a utility."
   (interactive (ember--interactive-generator-options "util" nil t))
   (ember-destroy "util" kind options))
+
+(defun ember-destroy-helper (kind options)
+  "Destroys a helper."
+  (interactive (ember--interactive-generator-options "helper" nil t))
+  (ember-destroy "helper" kind options))
 
 (defun ember-destroy-service (kind options)
   "Destroys a service."
@@ -1621,6 +1639,7 @@ For example, if you have a project named foo, the paths look like
 (define-key ember-command-prefix (kbd "f x") #'ember-open-mixin)
 (define-key ember-command-prefix (kbd "f i") #'ember-open-initializer)
 (define-key ember-command-prefix (kbd "f u") #'ember-open-util)
+(define-key ember-command-prefix (kbd "f h") #'ember-open-helper)
 (define-key ember-command-prefix (kbd "f s") #'ember-open-service)
 (define-key ember-command-prefix (kbd "f a") #'ember-toggle-addon)
 
@@ -1634,6 +1653,7 @@ For example, if you have a project named foo, the paths look like
 (define-key ember-command-prefix (kbd "g x") #'ember-generate-mixin)
 (define-key ember-command-prefix (kbd "g i") #'ember-generate-initializer)
 (define-key ember-command-prefix (kbd "g u") #'ember-generate-util)
+(define-key ember-command-prefix (kbd "g h") #'ember-generate-helper)
 (define-key ember-command-prefix (kbd "g s") #'ember-generate-service)
 
 (define-key ember-command-prefix (kbd "d g") #'ember-destroy)
@@ -1646,6 +1666,7 @@ For example, if you have a project named foo, the paths look like
 (define-key ember-command-prefix (kbd "d x") #'ember-destroy-mixin)
 (define-key ember-command-prefix (kbd "d i") #'ember-destroy-initializer)
 (define-key ember-command-prefix (kbd "d u") #'ember-destroy-util)
+(define-key ember-command-prefix (kbd "d h") #'ember-destroy-helper)
 (define-key ember-command-prefix (kbd "d s") #'ember-destroy-service)
 
 (define-key ember-command-prefix (kbd "r b") 'ember-build)
