@@ -141,7 +141,7 @@
 ;;;;;;;;;;;;;;;;;;;;
 ;;; General Settings
 (defcustom ember-script-file-types
-  '("coffee" "js")
+  '("coffee" "js" "ts")
   "Filetypes used for script files.  These are the javascript and the coffeescript file.
 
 The first item in this list is used as the 'default', indicating
