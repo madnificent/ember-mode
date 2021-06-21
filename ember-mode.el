@@ -1467,9 +1467,9 @@ For example, if you have a project named foo, the paths look like
 
 (defvar *ember--decorator-importer-matches*
   '(("tagName" "import { tagName } from '@ember/component';")
-    ("attr" "import { attr } from '@ember/data';")
-    ("belongsTo" "import { belongsTo } from '@ember/data';")
-    ("hasMany" "import { hasMany } from '@ember/data';")
+    ("attr" "import { attr } from '@ember-data/model';")
+    ("belongsTo" "import { belongsTo } from '@ember-data/model';")
+    ("hasMany" "import { hasMany } from '@ember-data/model';")
     ("action" "import { action } from '@ember/object';")
     ("computed" "import { computed } from '@ember/object';")
     ("filterBy" "import { filterBy } from '@ember/object/computed';")
