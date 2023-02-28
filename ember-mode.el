@@ -141,8 +141,8 @@
 ;;;;;;;;;;;;;;;;;;;;
 ;;; General Settings
 (defcustom ember-script-file-types
-  '("coffee" "js")
-  "Filetypes used for script files.  These are the javascript and the coffeescript file.
+  '("js" "ts")
+  "Filetypes used for script files.  These are the JavaScript and the TypeScript file.
 
 The first item in this list is used as the 'default', indicating
 the preference to look up this type of file."
@@ -494,10 +494,10 @@ Sources are specified in ember by a few orthogonal factors:
 - TARGET-KIND :: The target kind is the kind of source file you
     expect to receive.  This is either 'source', 'template', or blank.
     For instance:
-      - The coffeescript file for a UserRoute would be 'source'
+      - The JavaScript file for a UserRoute would be 'source'
       - The handlebars file for a UserController would be 'template'
       - The UserComponent's handlebars file would be 'template'
-      - The UserComponent's coffeescript file would be 'source'
+      - The UserComponent's JavaScript file would be 'source'
     Possible values are:
       - template
       - source
@@ -568,7 +568,7 @@ ember source file."
 the currently open file.
 
 ASSUME-JS is an override.  If this is true, it is assumed that a
-javascript (or coffeescript) source file should be opened."
+javascript (or TypeScript) source file should be opened."
   (cl-destructuring-bind (base-prefix base-class base-type target-kind)
       (ember--current-file-components)
     (let ((new-target-kind (if assume-js "source" target-kind)))
@@ -1601,6 +1601,16 @@ For example, if you have a project named foo, the paths look like
         ;; we found no solution
         (message (concat "no match found (matched symbol is " found-symbol ")"))))))
 
+
+(defun ember-version ()
+  "Output ember-cli version."
+  (interactive)
+  (let ((default-directory (ember--current-project-root)))
+    (let ((command (concat ember-command " version " )))
+      (message command)
+      (let ((response (shell-command-to-string command)))
+        (message response)
+			))))
 
 ;;;;;;;;;;;;;;;
 ;;; Keybindings
