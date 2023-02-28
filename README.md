@@ -4,7 +4,7 @@ Ember-mode speeds up navigation in EmberJS projects.
 
 ## Usage ##
 
-Ember-mode helps in jumping and generating javascript files in an emberjs project.  It assumes an ember-cli-like folder-structure and supports both coffeescript and javascript extensions.  Experimental support for POD structures has recently been added.
+Ember-mode helps in jumping and generating javascript files in an emberjs project.  It assumes an ember-cli-like folder-structure and supports both TypeScript and JavaScript extensions.  Experimental support for POD structures has recently been added.
 
 ### example usage ###
 
@@ -16,26 +16,25 @@ Let's assume you have the following files in your emberjs folder structure:
 
 
     - app
-      router.coffee
+      router.js
         - models
-            - friend.coffee
-            - plugin.coffee
+            - friend.js
+            - plugin.js
         - controllers
-            - plugins.coffee
+            - plugins.js
         - routes
-            - friends.coffee
-            - plugins.coffee
+            - friends.js
+            - plugins.js
             - friends
-                - show.coffee
+                - show.js
 
 #### navigation ####
 
-Say you are visiting the `models/friend.coffee` file with `ember-mode` enabled.  Pressing `C-c . f r` will move to `routes/friends.coffee`.
+Say you are visiting the `models/friend.js` file with `ember-mode` enabled.  Pressing `C-c . f r` will move to `routes/friends.js`.
 
-If, from there on, you enter `C-c . f c` ember-mode will try to open `controllers/friends.coffee`.  As that doesn't exist, it'll try all of the following:
+If, from there on, you enter `C-c . f c` ember-mode will try to open `controllers/friends.js`.  As that doesn't exist, it'll try all of the following:
 
     - controllers/friends.js
-    - controllers/friend.coffee
     - controllers/friend.js
 
 As none of these exist, it lists all controllers and lets you select one of them.
@@ -43,22 +42,17 @@ As none of these exist, it lists all controllers and lets you select one of them
 
 #### manual generation ####
 
-Say we are visiting `routes/plugins.coffee` and would like to generate a `Peer` model.  Pressing `C-c . g m` will ask for the name of the class to generate (with a default of `plugins`) and the options to be passed to the generator.  The default is hinted based on the current file.
+Say we are visiting `routes/plugins.js` and would like to generate a `Peer` model.  Pressing `C-c . g m` will ask for the name of the class to generate (with a default of `plugins`) and the options to be passed to the generator.  The default is hinted based on the current file.
 
-Similarly, if we are visiting `routes/plugins.coffee` and want to generate a controller, pressing `C-c . g c` will ask for the name of the controller to generate (with a default of `plugins`) and the options to be passed to the generator.  In essence, pressing enter twice will generate `controllers/plugins.coffee`.
+Similarly, if we are visiting `routes/plugins.js` and want to generate a controller, pressing `C-c . g c` will ask for the name of the controller to generate (with a default of `plugins`) and the options to be passed to the generator.  In essence, pressing enter twice will generate `controllers/plugins.js`.
 
 
 #### automatic generation ####
 
-Say we are visiting `models/friend.coffee` and want to generate the `friend` route.  Pressing `C-u C-c . g r` will use the ember generators to generate the route and open it (without posing any questions).
+Say we are visiting `models/friend.js` and want to generate the `friend` route.  Pressing `C-u C-c . g r` will use the ember generators to generate the route and open it (without posing any questions).
 
-Note that pressing `C-c . f r` would have navigated to `routes/friends.coffee` and wouldn't have found the newly generated route before.
+Note that pressing `C-c . f r` would have navigated to `routes/friends.js` and wouldn't have found the newly generated route before.
 
-
-*PRO TIP:* If you are using coffeescript, enable `ember-cli-coffeescript` to generate coffeescript instead of javascript files.  If you don't, javascript files will be generated.
-
-    cd path/to/your/ember-cli-project
-    npm install ember-cli-coffeescript --save-dev
 
 ### building, serving, testing ###
 
