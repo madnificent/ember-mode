@@ -693,12 +693,18 @@ requests the user if the file should be created."
                             (ember--relative-ember-source-path prefix (ember--pluralize-noun base-class) base-type target-kind)
                             (ember--relative-ember-source-path prefix (ember--singularize-noun base-class) base-type target-kind)))))
       (cl-block found-file
-        (cl-loop for relative-file in file-list
-                 for absolute-file = (concat ember-root relative-file)
-                 if (file-exists-p absolute-file)
-                 do
-                 (ember--find-file absolute-file)
-                 (cl-return-from found-file absolute-file))
+        (let ((start-buffer (current-buffer)))
+          (cl-loop for relative-file in file-list
+                   for absolute-file = (concat ember-root relative-file)
+                   ;; if the buffer exists, and moving to it positions
+                   ;; us in a different buffer than where we are, then
+                   ;; we're done.
+                   if (and (file-exists-p absolute-file)
+                           (progn (ember--find-file absolute-file)
+                                  (not (eq start-buffer (current-buffer)))))
+                   do
+                   (message "returning file %s" absolute-file)
+                   (cl-return-from found-file absolute-file)))
         (when (string= target-kind "template")
           (setf base-type "template"))
         (ember--select-file-by-type-and-kind "Not found, alternatives: " base-type target-kind)))))
@@ -796,7 +802,7 @@ the corresponding source."
   "Runs an ember generator."
   (interactive (ember--interactive-generator-options))
   (let ((default-directory (ember--current-project-root)))
-    (let ((command (concat ember-command " generate " generator " " kind " " options)))
+    (let ((command (concat ember-command " generate " generator " " kind " " (or options ""))))
       (message command)
       (let ((response (shell-command-to-string command)))
         (message response)
