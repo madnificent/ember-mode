@@ -1494,17 +1494,21 @@ For example, if you have a project named foo, the paths look like
     ("Ember.warn" "warn" "import { warn } from '@ember/debug';")))
 
 (defvar *ember--decorator-importer-matches*
-  '(("tagName" "import { tagName } from '@ember/component';")
-    ("attr" "import { attr } from '@ember/data';")
-    ("belongsTo" "import { belongsTo } from '@ember/data';")
-    ("hasMany" "import { hasMany } from '@ember/data';")
+  '(("attr" "import { attr } from '@ember-data/model';")
+    ("belongsTo" "import { belongsTo } from '@ember-data/model';")
+    ("hasMany" "import { hasMany } from '@ember-data/model';")
     ("action" "import { action } from '@ember/object';")
     ("computed" "import { computed } from '@ember/object';")
     ("filterBy" "import { filterBy } from '@ember/object/computed';")
     ("sort" "import { sort } from '@ember/object/computed';")
-    ("service" "import { inject as service } from '@ember/service';")
+    ("service" "import { service } from '@ember/service';")
+    ("cached" "import { cached } from '@glimmer/tracking';")
     ("tracked" "import { tracked } from '@glimmer/tracking';")
-    ("task" "import { task } from 'ember-concurrency-decorators';")))
+    ("task" "import { task } from 'ember-concurrency';")
+    ("restartableTask" "import { restartableTask } from 'ember-concurrency';")
+    ("dropTask" "import { dropTask } from 'ember-concurrency';")
+    ("keepLatestTask" "import { keepLatestTask } from 'ember-concurrency';")
+    ("enqueueTask" "import { enqueueTask } from 'ember-concurrency';")))
 
 (defun ember--get-js-symbol-at-point ()
   "Returns the javascript symbol at the current point,
